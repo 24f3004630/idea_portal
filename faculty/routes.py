@@ -121,6 +121,18 @@ def view_project(project_id):
         Person.type == 'Student'
     ).all()
     
+    # Get available students (approved students not in this project)
+    used_student_ids = db.session.query(ProjectPerson.person_id).filter(
+        ProjectPerson.project_id == project_id
+    ).all()
+    used_student_ids = [s[0] for s in used_student_ids]
+    
+    available_students = Person.query.filter(
+        Person.type == 'Student',
+        Person.is_approved == True,
+        ~Person.person_id.in_(used_student_ids)
+    ).all()
+    
     # Get project publications
     publications = Publication.query.filter_by(project_id=project_id).all()
     
@@ -143,6 +155,7 @@ def view_project(project_id):
                          project=project,
                          team_members=team_members,
                          students=students,
+                         available_students=available_students,
                          publications=publications,
                          fundings=fundings,
                          iprs=iprs)
