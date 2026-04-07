@@ -1,5 +1,6 @@
 from .db import db
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 # ------------------ PERSON (Student / Faculty / Admin) ------------------
 class Person(db.Model):
@@ -12,6 +13,12 @@ class Person(db.Model):
     type = db.Column(db.String(20), nullable=False)  # Student / Faculty / Admin
     department = db.Column(db.String(100))
     is_approved = db.Column(db.Boolean, default=False)
+    
+    # Student-specific fields
+    skills = db.Column(db.Text)  # Comma-separated skills
+    resume_url = db.Column(db.String(255))  # URL to uploaded resume
+    bio = db.Column(db.Text)  # Short bio/profile description
+    phone = db.Column(db.String(20))  # Contact phone number
 
     def set_password(self, password):
         self.password = generate_password_hash(password)
@@ -166,3 +173,20 @@ class ProjectCompetition(db.Model):
 
     team_name = db.Column(db.String(100))
     prize_money_received = db.Column(db.Float)
+
+
+# ------------------ PROJECT APPLICATION / JOIN REQUEST ------------------
+class ProjectApplication(db.Model):
+    __tablename__ = 'project_application'
+
+    application_id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('research_project.project_id'))
+    student_id = db.Column(db.Integer, db.ForeignKey('person.person_id'))
+    
+    application_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(50), default='Pending')  # Pending / Approved / Rejected
+    student_message = db.Column(db.Text)  # Optional message from student
+    faculty_message = db.Column(db.Text)  # Optional feedback from faculty
+    
+    def __repr__(self):
+        return f'<ProjectApplication {self.application_id}>'
