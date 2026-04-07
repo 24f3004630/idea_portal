@@ -4,7 +4,7 @@ from database.models import (
     Person, ResearchProject, ProjectPerson, Publication, IPR, Startup, 
     Competition, Funder, ProjectFunding, PublicationAuthor, Author
 )
-from auth.decorators import login_required, role_required
+from auth.decorators import login_required, role_required, faculty_can_create_projects, approved_required
 from datetime import datetime
 
 faculty_bp = Blueprint('faculty', __name__, url_prefix='/faculty')
@@ -57,6 +57,7 @@ def dashboard():
 @faculty_bp.route('/project/create', methods=['GET', 'POST'])
 @login_required
 @role_required('Faculty')
+@faculty_can_create_projects
 def create_project():
     """Create a new research project"""
     if request.method == 'POST':
