@@ -35,7 +35,7 @@ class ResearchProject(db.Model):
     iic_registration_status = db.Column(db.String(50))
     project_level = db.Column(db.String(50))
     program_location = db.Column(db.String(100))
-
+    is_approved = db.Column(db.Boolean, default=False)
 
 # ------------------ PROJECT_PERSON (M:N) ------------------
 class ProjectPerson(db.Model):

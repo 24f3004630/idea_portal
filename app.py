@@ -1,14 +1,24 @@
 from flask import Flask
+from config import Config
 from database.db import db
-from database import models
 
-from database.models import Person
-
-
+# CREATE APP FIRST
 app = Flask(__name__)
-app.config.from_object('config.Config')
+app.config.from_object(Config)
 
+# INIT DB
 db.init_app(app)
+
+# IMPORT BLUEPRINTS AFTER APP
+from auth.routes import auth_bp
+from admin.routes import admin_bp
+
+# REGISTER BLUEPRINTS
+app.register_blueprint(auth_bp)
+app.register_blueprint(admin_bp)
+
+# CREATE DB + ADMIN
+from database.models import Person
 
 with app.app_context():
     db.create_all()
@@ -25,8 +35,10 @@ with app.app_context():
         db.session.add(admin)
         db.session.commit()
 
-from auth.routes import auth_bp
-app.register_blueprint(auth_bp)
+# TEST ROUTE
+@app.route('/')
+def home():
+    return "App Running"
 
 if __name__ == "__main__":
     app.run(debug=True)

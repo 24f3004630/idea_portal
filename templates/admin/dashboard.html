@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row">
+
+  <div class="col-md-3">
+    <div class="card text-center p-3 shadow">
+      <h5>Total Users</h5>
+      <h3>{{ total_users }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card text-center p-3 shadow">
+      <h5>Students</h5>
+      <h3>{{ total_students }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card text-center p-3 shadow">
+      <h5>Faculty</h5>
+      <h3>{{ total_faculty }}</h3>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="card text-center p-3 shadow">
+      <h5>Projects</h5>
+      <h3>{{ total_projects }}</h3>
+    </div>
+  </div>
+
+</div>
+
+<a href="/admin/users" class="btn btn-primary mt-4">Manage Users</a>
+<a href="/admin/projects" class="btn btn-success mt-4">Manage Projects</a>
+
+{% endblock %}
