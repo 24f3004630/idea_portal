@@ -128,3 +128,118 @@ def approve_project(project_id):
             project.project_status = 'Ongoing'
         db.session.commit()
     return redirect('/admin/projects')
+
+
+# ==================== VIEW PROJECTS BY STATUS ====================
+@admin_bp.route('/projects/status/<status>')
+@login_required
+@role_required('Admin')
+def projects_by_status(status):
+    """View projects filtered by status"""
+    valid_statuses = ['Proposed', 'Ongoing', 'Completed', 'On Hold']
+    
+    if status not in valid_statuses:
+        return "Invalid status", 400
+    
+    projects = ResearchProject.query.filter_by(project_status=status).all()
+    
+    for project in projects:
+        project.faculty = Person.query.get(project.faculty_id)
+    
+    return render_template('admin/projects_by_status.html',
+                         projects=projects,
+                         status=status)
+
+
+# ==================== PROJECT LIFECYCLE VIEW ====================
+@admin_bp.route('/project/<int:project_id>/lifecycle')
+@login_required
+@role_required('Admin')
+def project_lifecycle(project_id):
+    """View full project lifecycle: Project → Publication → IPR → Startup"""
+    from database.models import Startup
+    
+    project = ResearchProject.query.get(project_id)
+    
+    if not project:
+        return "Project not found", 404
+    
+    faculty = Person.query.get(project.faculty_id)
+    team_members = db.session.query(ProjectPerson, Person).filter(
+        ProjectPerson.project_id == project_id,
+        ProjectPerson.person_id == Person.person_id
+    ).all()
+    
+    # Get all output artifacts
+    publications = Publication.query.filter_by(project_id=project_id).all()
+    iprs = IPR.query.filter_by(project_id=project_id).all()
+    startup = Startup.query.filter_by(project_id=project_id).first()
+    
+    return render_template('admin/project_lifecycle.html',
+                         project=project,
+                         faculty=faculty,
+                         team_members=team_members,
+                         publications=publications,
+                         iprs=iprs,
+                         startup=startup)
+
+
+# ==================== PUBLICATION MONITORING ====================
+@admin_bp.route('/publications')
+@login_required
+@role_required('Admin')
+def view_publications():
+    """View all publications with their statuses"""
+    publications = Publication.query.all()
+    
+    pub_data = []
+    for pub in publications:
+        project = ResearchProject.query.get(pub.project_id)
+        pub_data.append({
+            'publication': pub,
+            'project': project,
+            'faculty': Person.query.get(project.faculty_id) if project else None
+        })
+    
+    return render_template('admin/publications.html', pub_data=pub_data)
+
+
+# ==================== IPR/PATENT MONITORING ====================
+@admin_bp.route('/iprs')
+@login_required
+@role_required('Admin')
+def view_iprs():
+    """View all IPRs/Patents with their grant statuses"""
+    iprs = IPR.query.all()
+    
+    ipr_data = []
+    for ipr in iprs:
+        project = ResearchProject.query.get(ipr.project_id)
+        ipr_data.append({
+            'ipr': ipr,
+            'project': project,
+            'faculty': Person.query.get(project.faculty_id) if project else None
+        })
+    
+    return render_template('admin/iprs.html', ipr_data=ipr_data)
+
+
+# ==================== STARTUP TRACKING ====================
+@admin_bp.route('/startups')
+@login_required
+@role_required('Admin')
+def view_startups():
+    """View all startups converted from projects"""
+    startups = Startup.query.all()
+    
+    startup_data = []
+    for startup in startups:
+        project = ResearchProject.query.get(startup.project_id)
+        startup_data.append({
+            'startup': startup,
+            'project': project,
+            'faculty': Person.query.get(project.faculty_id) if project else None
+        })
+    
+    return render_template('admin/startups.html', startup_data=startup_data)
+    return redirect('/admin/projects')

@@ -25,6 +25,14 @@ class Person(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+    
+    def can_create_projects(self):
+        """Check if faculty can create projects"""
+        return self.type == 'Faculty' and self.is_approved
+    
+    def can_approve_applications(self):
+        """Check if user can approve applications"""
+        return self.type in ['Faculty', 'Admin'] and self.is_approved
 
 
 # ------------------ RESEARCH PROJECT ------------------
@@ -49,6 +57,41 @@ class ResearchProject(db.Model):
     program_location = db.Column(db.String(100))
     is_approved = db.Column(db.Boolean, default=False)
     is_startup_converted = db.Column(db.Boolean, default=False)  # Track if converted to startup
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_publications(self):
+        """Get all publications for this project"""
+        return Publication.query.filter_by(project_id=self.project_id).all()
+    
+    def get_iprs(self):
+        """Get all IPRs for this project"""
+        return IPR.query.filter_by(project_id=self.project_id).all()
+    
+    def get_startup(self):
+        """Get startup if converted"""
+        return Startup.query.filter_by(project_id=self.project_id).first()
+    
+    def get_team_members(self):
+        """Get all team members"""
+        return db.session.query(ProjectPerson, Person).filter(
+            ProjectPerson.project_id == self.project_id,
+            ProjectPerson.person_id == Person.person_id
+        ).all()
+    
+    def get_faculty(self):
+        """Get faculty info"""
+        return Person.query.get(self.faculty_id)
+    
+    def can_accept_students(self):
+        """Check if project can accept more students"""
+        if not self.is_approved:
+            return False
+        if self.project_status != 'Ongoing':
+            return False
+        current_team = len(ProjectPerson.query.filter_by(project_id=self.project_id).all())
+        return current_team < (self.team_size or 999)
 
 # ------------------ PROJECT_PERSON (M:N) ------------------
 class ProjectPerson(db.Model):
@@ -99,6 +142,13 @@ class Publication(db.Model):
     issn_isbn = db.Column(db.String(100))
     publisher = db.Column(db.String(200))
     status = db.Column(db.String(50), default='Submitted')  # Submitted / Accepted / Published / Rejected
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Unique constraint: prevent duplicate publications for same project
+    __table_args__ = (
+        db.UniqueConstraint('project_id', 'title', 'venue', 'year_of_publication', name='uq_publication_unique'),
+    )
 
 
 # ------------------ AUTHOR ------------------
@@ -123,6 +173,7 @@ class IPR(db.Model):
     __tablename__ = 'ipr'
 
     ipr_id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('research_project.project_id'))
     publication_id = db.Column(db.Integer, db.ForeignKey('publication.publication_id'))
 
     innovation_title = db.Column(db.String(200))
@@ -134,8 +185,15 @@ class IPR(db.Model):
     grant_date = db.Column(db.Date)
     expiry_date = db.Column(db.Date)
 
-    grant_status = db.Column(db.String(50), default='Filed')  # Filed / Granted / Rejected / Pending
+    grant_status = db.Column(db.String(50), default='Filed')  # Filed / Pending / Granted / Rejected
     ownership_type = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Unique constraint: prevent duplicate IPRs for same project/innovation
+    __table_args__ = (
+        db.UniqueConstraint('project_id', 'innovation_title', name='uq_ipr_unique'),
+    )
 
 
 # ------------------ STARTUP (1:1 with Project) ------------------
@@ -145,11 +203,18 @@ class Startup(db.Model):
     startup_id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('research_project.project_id'), unique=True)
 
-    startup_name = db.Column(db.String(200))
+    startup_name = db.Column(db.String(200), nullable=False)
     registration_number = db.Column(db.String(100))
-    revenue_generated = db.Column(db.Float)
-    development_status = db.Column(db.String(100))
-    fund_amount = db.Column(db.Float)
+    revenue_generated = db.Column(db.Float, default=0)
+    development_status = db.Column(db.String(100), default='Idea')  # Idea / MVP / Beta / Live / Growth
+    fund_amount = db.Column(db.Float, default=0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_project(self):
+        """Get associated project"""
+        return ResearchProject.query.get(self.project_id)
 
 
 # ------------------ COMPETITION ------------------
