@@ -25,17 +25,23 @@ class ResearchProject(db.Model):
     __tablename__ = 'research_project'
 
     project_id = db.Column(db.Integer, primary_key=True)
+    faculty_id = db.Column(db.Integer, db.ForeignKey('person.person_id'))
+    
     project_title = db.Column(db.String(200), nullable=False)
     project_description = db.Column(db.Text)
     domain = db.Column(db.String(100))
     department = db.Column(db.String(100))
+    required_skills = db.Column(db.Text)  # Comma-separated skills
+    team_size = db.Column(db.Integer)
+    
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    project_status = db.Column(db.String(50))
+    project_status = db.Column(db.String(50), default='Ongoing')  # Ongoing / Completed / On Hold
     iic_registration_status = db.Column(db.String(50))
     project_level = db.Column(db.String(50))
     program_location = db.Column(db.String(100))
     is_approved = db.Column(db.Boolean, default=False)
+    is_startup_converted = db.Column(db.Boolean, default=False)  # Track if converted to startup
 
 # ------------------ PROJECT_PERSON (M:N) ------------------
 class ProjectPerson(db.Model):
