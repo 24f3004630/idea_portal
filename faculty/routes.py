@@ -71,7 +71,7 @@ def create_project():
                 department=request.form.get('department'),
                 required_skills=request.form.get('required_skills'),
                 team_size=int(request.form.get('team_size', 1)),
-                project_status='Ongoing',
+                project_status='Proposed',
                 program_location=request.form.get('program_location', '')
             )
             
@@ -191,6 +191,9 @@ def add_student_to_project(project_id):
         
         if existing:
             return "Student already in this project", 400
+
+        if not project.is_approved:
+            return "Cannot add students to an unapproved project", 400
         
         # Verify student exists and is actually a student
         student = Person.query.get(student_id)
@@ -281,9 +284,22 @@ def add_publication(project_id):
     
     if request.method == 'POST':
         try:
+            title = request.form.get('title')
+            doi = request.form.get('doi')
+
+            query = Publication.query.filter(Publication.project_id == project_id)
+            if doi:
+                query = query.filter((Publication.title == title) | (Publication.doi == doi))
+            else:
+                query = query.filter(Publication.title == title)
+
+            existing_publication = query.first()
+            if existing_publication:
+                return "Duplicate publication entry detected for this project", 400
+
             publication = Publication(
                 project_id=project_id,
-                title=request.form.get('title'),
+                title=title,
                 publication_type=request.form.get('publication_type'),
                 venue=request.form.get('venue'),
                 status=request.form.get('status', 'Submitted'),
@@ -291,7 +307,7 @@ def add_publication(project_id):
                 year_of_publication=int(request.form.get('year_of_publication', datetime.now().year)),
                 volume=request.form.get('volume'),
                 page_number=request.form.get('page_number'),
-                doi=request.form.get('doi'),
+                doi=doi,
                 issn_isbn=request.form.get('issn_isbn'),
                 publisher=request.form.get('publisher')
             )
@@ -319,26 +335,42 @@ def add_ipr(project_id):
     
     if request.method == 'POST':
         try:
-            # Get or create publication
             publication_id = request.form.get('publication_id')
-            
-            if not publication_id:
-                # Create a publication if not exists
+            innovation_title = request.form.get('innovation_title')
+            application_number = request.form.get('application_number')
+
+            if publication_id:
+                publication = Publication.query.get(publication_id)
+                if not publication or publication.project_id != project_id:
+                    return "Invalid publication selected", 400
+            else:
                 publication = Publication(
                     project_id=project_id,
-                    title=request.form.get('innovation_title'),
+                    title=innovation_title,
                     publication_type='Patent',
                     status='Submitted'
                 )
                 db.session.add(publication)
                 db.session.flush()
                 publication_id = publication.publication_id
-            
+
+            if application_number:
+                duplicate_ipr = IPR.query.filter_by(application_number=application_number).first()
+                if duplicate_ipr:
+                    return "Duplicate IPR entry detected by application number", 400
+
+            duplicate_title = IPR.query.join(Publication).filter(
+                Publication.project_id == project_id,
+                IPR.innovation_title == innovation_title
+            ).first()
+            if duplicate_title:
+                return "Duplicate IPR entry detected for this project", 400
+
             ipr = IPR(
                 publication_id=publication_id,
-                innovation_title=request.form.get('innovation_title'),
+                innovation_title=innovation_title,
                 ipr_type=request.form.get('ipr_type'),
-                application_number=request.form.get('application_number'),
+                application_number=application_number,
                 grant_status=request.form.get('grant_status', 'Filed'),
                 ownership_type=request.form.get('ownership_type', 'Individual')
             )

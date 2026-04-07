@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect
-from database.models import Person, ResearchProject
+from database.models import Person, ResearchProject, Publication, IPR, Startup
 from database.db import db
 from auth.decorators import login_required, role_required
 
@@ -14,13 +14,21 @@ def dashboard():
     total_users = Person.query.count()
     total_students = Person.query.filter_by(type='Student').count()
     total_faculty = Person.query.filter_by(type='Faculty').count()
+    active_users = Person.query.filter_by(is_approved=True).count()
     total_projects = ResearchProject.query.count()
+    total_publications = Publication.query.count()
+    total_iprs = IPR.query.count()
+    total_startups = Startup.query.count()
 
     return render_template('admin/dashboard.html',
                            total_users=total_users,
                            total_students=total_students,
                            total_faculty=total_faculty,
-                           total_projects=total_projects)
+                           active_users=active_users,
+                           total_projects=total_projects,
+                           total_publications=total_publications,
+                           total_iprs=total_iprs,
+                           total_startups=total_startups)
 
 
 # ---------------- VIEW USERS ----------------
@@ -116,5 +124,7 @@ def approve_project(project_id):
     project = ResearchProject.query.get(project_id)
     if project:
         project.is_approved = True
+        if project.project_status == 'Proposed':
+            project.project_status = 'Ongoing'
         db.session.commit()
     return redirect('/admin/projects')

@@ -36,7 +36,7 @@ class ResearchProject(db.Model):
     
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    project_status = db.Column(db.String(50), default='Ongoing')  # Ongoing / Completed / On Hold
+    project_status = db.Column(db.String(50), default='Proposed')  # Proposed / Ongoing / Completed / On Hold
     iic_registration_status = db.Column(db.String(50))
     project_level = db.Column(db.String(50))
     program_location = db.Column(db.String(100))
@@ -91,7 +91,7 @@ class Publication(db.Model):
     doi = db.Column(db.String(100))
     issn_isbn = db.Column(db.String(100))
     publisher = db.Column(db.String(200))
-    status = db.Column(db.String(50))  # Submitted / Accepted / Published
+    status = db.Column(db.String(50), default='Submitted')  # Submitted / Accepted / Published / Rejected
 
 
 # ------------------ AUTHOR ------------------
@@ -121,13 +121,13 @@ class IPR(db.Model):
     innovation_title = db.Column(db.String(200))
     ipr_type = db.Column(db.String(50))  # Patent / Copyright / Trademark / Design
 
-    application_number = db.Column(db.String(100))
+    application_number = db.Column(db.String(100), unique=True)
     filing_date = db.Column(db.Date)
     registration_date = db.Column(db.Date)
     grant_date = db.Column(db.Date)
     expiry_date = db.Column(db.Date)
 
-    grant_status = db.Column(db.String(50))
+    grant_status = db.Column(db.String(50), default='Filed')  # Filed / Granted / Rejected / Pending
     ownership_type = db.Column(db.String(50))
 
 
