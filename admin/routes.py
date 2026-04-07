@@ -32,6 +32,15 @@ def view_users():
     return render_template('admin/users.html', users=users)
 
 
+# ---------------- VIEW PENDING FACULTY ----------------
+@admin_bp.route('/pending_faculty')
+@login_required
+@role_required('Admin')
+def view_pending_faculty():
+    pending_faculty = Person.query.filter_by(type='Faculty', is_approved=False).all()
+    return render_template('admin/pending_faculty.html', users=pending_faculty)
+
+
 # ---------------- APPROVE FACULTY ----------------
 @admin_bp.route('/approve/<int:user_id>')
 @login_required
@@ -40,6 +49,30 @@ def approve_user(user_id):
     user = Person.query.get(user_id)
     if user:
         user.is_approved = True
+        db.session.commit()
+    return redirect('/admin/users')
+
+
+# ---------------- REJECT USER ----------------
+@admin_bp.route('/reject/<int:user_id>')
+@login_required
+@role_required('Admin')
+def reject_user(user_id):
+    user = Person.query.get(user_id)
+    if user:
+        user.is_approved = False
+        db.session.commit()
+    return redirect('/admin/users')
+
+
+# ---------------- DEACTIVATE USER ----------------
+@admin_bp.route('/deactivate/<int:user_id>')
+@login_required
+@role_required('Admin')
+def deactivate_user(user_id):
+    user = Person.query.get(user_id)
+    if user:
+        user.is_approved = False
         db.session.commit()
     return redirect('/admin/users')
 
