@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Projects</h5>
+                <p class="card-text fs-4">{{ total_projects }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Ongoing Projects</h5>
+                <p class="card-text fs-4">{{ ongoing_projects }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Completed Projects</h5>
+                <p class="card-text fs-4">{{ completed_projects }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Startup Conversions</h5>
+                <p class="card-text fs-4">{{ startup_conversions }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>My Research Projects</h4>
+            <a href="/faculty/project/create" class="btn btn-primary">+ New Project</a>
+        </div>
+        
+        {% if projects %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Project Title</th>
+                        <th>Domain</th>
+                        <th>Status</th>
+                        <th>Team Size</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for project in projects %}
+                    <tr>
+                        <td>
+                            <a href="/faculty/project/{{ project.project_id }}" class="text-decoration-none">
+                                {{ project.project_title }}
+                            </a>
+                        </td>
+                        <td>{{ project.domain or 'N/A' }}</td>
+                        <td>
+                            {% if project.project_status == 'Ongoing' %}
+                                <span class="badge bg-success">{{ project.project_status }}</span>
+                            {% elif project.project_status == 'Completed' %}
+                                <span class="badge bg-info">{{ project.project_status }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ project.project_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ project.team_size or '0' }}</td>
+                        <td>
+                            <a href="/faculty/project/{{ project.project_id }}" class="btn btn-sm btn-outline-primary">View</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            No projects yet. <a href="/faculty/project/create">Create your first project</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <h5>Recent Publications</h5>
+        {% if publications %}
+        <div class="list-group">
+            {% for pub in publications %}
+            <div class="list-group-item">
+                <h6 class="mb-1">{{ pub.title }}</h6>
+                <p class="mb-1 text-muted small">{{ pub.publication_type }} - {{ pub.venue }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No publications yet</p>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-6">
+        <h5>IPR/Patents</h5>
+        {% if iprs %}
+        <div class="list-group">
+            {% for ipr in iprs %}
+            <div class="list-group-item">
+                <h6 class="mb-1">{{ ipr.innovation_title }}</h6>
+                <p class="mb-1 text-muted small">{{ ipr.ipr_type }} - {{ ipr.grant_status }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">No IPR/Patents yet</p>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

@@ -12,10 +12,12 @@ db.init_app(app)
 # IMPORT BLUEPRINTS AFTER APP
 from auth.routes import auth_bp
 from admin.routes import admin_bp
+from faculty.routes import faculty_bp
 
 # REGISTER BLUEPRINTS
 app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
+app.register_blueprint(faculty_bp)
 
 # CREATE DB + ADMIN
 from database.models import Person
