@@ -1,7 +1,8 @@
-from flask import Blueprint, render_template, request, redirect
-from database.models import Person, ResearchProject, Publication, IPR, Startup
+from flask import Blueprint, render_template, request, redirect, jsonify
+from database.models import Person, ResearchProject, Publication, IPR, Startup, ProjectPerson
 from database.db import db
 from auth.decorators import login_required, role_required
+from sqlalchemy import func
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -29,6 +30,100 @@ def dashboard():
                            total_publications=total_publications,
                            total_iprs=total_iprs,
                            total_startups=total_startups)
+
+
+# ==================== ANALYTICS API ====================
+@admin_bp.route('/api/analytics/users')
+@login_required
+@role_required('Admin')
+def api_analytics_users():
+    """Get user distribution analytics"""
+    total = Person.query.count()
+    students = Person.query.filter_by(type='Student').count()
+    faculty = Person.query.filter_by(type='Faculty').count()
+    approved = Person.query.filter_by(is_approved=True).count()
+    pending = Person.query.filter_by(is_approved=False).count()
+    
+    return jsonify({
+        'total': total,
+        'students': students,
+        'faculty': faculty,
+        'approved': approved,
+        'pending': pending
+    })
+
+
+@admin_bp.route('/api/analytics/projects')
+@login_required
+@role_required('Admin')
+def api_analytics_projects():
+    """Get project status distribution"""
+    proposed = ResearchProject.query.filter_by(project_status='Proposed').count()
+    ongoing = ResearchProject.query.filter_by(project_status='Ongoing').count()
+    completed = ResearchProject.query.filter_by(project_status='Completed').count()
+    on_hold = ResearchProject.query.filter_by(project_status='On Hold').count()
+    
+    return jsonify({
+        'proposed': proposed,
+        'ongoing': ongoing,
+        'completed': completed,
+        'on_hold': on_hold
+    })
+
+
+@admin_bp.route('/api/analytics/publications')
+@login_required
+@role_required('Admin')
+def api_analytics_publications():
+    """Get publication status distribution"""
+    submitted = Publication.query.filter_by(status='Submitted').count()
+    accepted = Publication.query.filter_by(status='Accepted').count()
+    published = Publication.query.filter_by(status='Published').count()
+    rejected = Publication.query.filter_by(status='Rejected').count()
+    
+    return jsonify({
+        'submitted': submitted,
+        'accepted': accepted,
+        'published': published,
+        'rejected': rejected
+    })
+
+
+@admin_bp.route('/api/analytics/iprs')
+@login_required
+@role_required('Admin')
+def api_analytics_iprs():
+    """Get IPR grant status distribution"""
+    filed = IPR.query.filter_by(grant_status='Filed').count()
+    pending = IPR.query.filter_by(grant_status='Pending').count()
+    granted = IPR.query.filter_by(grant_status='Granted').count()
+    rejected = IPR.query.filter_by(grant_status='Rejected').count()
+    
+    return jsonify({
+        'filed': filed,
+        'pending': pending,
+        'granted': granted,
+        'rejected': rejected
+    })
+
+
+@admin_bp.route('/api/analytics/domains')
+@login_required
+@role_required('Admin')
+def api_analytics_domains():
+    """Get projects by domain"""
+    results = db.session.query(
+        ResearchProject.domain,
+        func.count(ResearchProject.project_id)
+    ).filter(ResearchProject.domain != None).group_by(ResearchProject.domain).all()
+    
+    domains = [r[0] for r in results]
+    counts = [r[1] for r in results]
+    
+    return jsonify({
+        'domains': domains,
+        'counts': counts
+    })
 
 
 # ---------------- VIEW USERS ----------------

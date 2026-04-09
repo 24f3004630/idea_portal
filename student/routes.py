@@ -364,3 +364,127 @@ def leave_project(project_id):
         return redirect('/student/my-projects')
     except Exception as e:
         return f"Error leaving project: {str(e)}"
+
+
+# ==================== ANALYTICS APIs ====================
+@student_bp.route('/api/analytics/projects')
+@login_required
+@role_required('Student')
+def analytics_projects():
+    """Get projects joined by student, grouped by status"""
+    student_id = session['user_id']
+    
+    projects = db.session.query(
+        ResearchProject, ProjectPerson
+    ).join(
+        ProjectPerson, ResearchProject.project_id == ProjectPerson.project_id
+    ).filter(
+        ProjectPerson.person_id == student_id,
+        ResearchProject.is_approved == True
+    ).all()
+    
+    status_count = {
+        'Proposed': 0,
+        'Ongoing': 0,
+        'Completed': 0,
+        'On Hold': 0
+    }
+    
+    for project, _ in projects:
+        if project.project_status in status_count:
+            status_count[project.project_status] += 1
+    
+    return jsonify({
+        'statuses': list(status_count.keys()),
+        'counts': list(status_count.values())
+    })
+
+
+@student_bp.route('/api/analytics/contributions')
+@login_required
+@role_required('Student')
+def analytics_contributions():
+    """Get contribution breakdown (publications and IPRs) for student"""
+    student_id = session['user_id']
+    
+    # Get projects student is part of
+    student_projects = db.session.query(
+        ResearchProject.project_id
+    ).join(
+        ProjectPerson, ResearchProject.project_id == ProjectPerson.project_id
+    ).filter(
+        ProjectPerson.person_id == student_id,
+        ResearchProject.is_approved == True
+    ).all()
+    
+    project_ids = [p[0] for p in student_projects]
+    
+    if not project_ids:
+        return jsonify({
+            'publication_count': 0,
+            'ipr_count': 0,
+            'startup_count': 0
+        })
+    
+    # Get publications in these projects
+    publications = Publication.query.filter(
+        Publication.project_id.in_(project_ids)
+    ).count()
+    
+    # Get IPRs in these projects
+    iprs = db.session.query(IPR).join(
+        Publication, IPR.publication_id == Publication.publication_id
+    ).filter(
+        Publication.project_id.in_(project_ids)
+    ).count()
+    
+    # Get startups in these projects
+    startups = Startup.query.filter(
+        Startup.project_id.in_(project_ids)
+    ).count()
+    
+    return jsonify({
+        'publication_count': publications,
+        'ipr_count': iprs,
+        'startup_count': startups
+    })
+
+
+@student_bp.route('/api/analytics/skills-match')
+@login_required
+@role_required('Student')
+def analytics_skills_match():
+    """Get skill matching for projects joined"""
+    student_id = session['user_id']
+    
+    student = Person.query.get(student_id)
+    if not student or not student.skills:
+        return jsonify({
+            'skills': [],
+            'matched_projects': [],
+            'match_counts': []
+        })
+    
+    student_skills = set(s.strip().lower() for s in student.skills.split(',') if s.strip())
+    
+    # Get projects student is part of
+    projects = db.session.query(
+        ResearchProject, ProjectPerson
+    ).join(
+        ProjectPerson, ResearchProject.project_id == ProjectPerson.project_id
+    ).filter(
+        ProjectPerson.person_id == student_id,
+        ResearchProject.is_approved == True
+    ).all()
+    
+    skill_match = {}
+    for project, _ in projects:
+        if project.required_skills:
+            required_skills = set(s.strip().lower() for s in project.required_skills.split(',') if s.strip())
+            match_count = len(student_skills.intersection(required_skills))
+            skill_match[project.title] = match_count
+    
+    return jsonify({
+        'projects': list(skill_match.keys()),
+        'match_counts': list(skill_match.values())
+    })

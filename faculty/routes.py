@@ -566,3 +566,123 @@ def get_available_students(project_id):
         'name': s.name,
         'email': s.email
     } for s in available_students])
+
+
+# ==================== ANALYTICS APIs ====================
+@faculty_bp.route('/api/analytics/projects')
+@login_required
+@role_required('Faculty')
+def analytics_projects():
+    """Get project status distribution for faculty"""
+    faculty_id = session['user_id']
+    
+    projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
+    
+    status_count = {
+        'Proposed': 0,
+        'Ongoing': 0,
+        'Completed': 0,
+        'On Hold': 0
+    }
+    
+    for project in projects:
+        if project.project_status in status_count:
+            status_count[project.project_status] += 1
+    
+    return jsonify({
+        'statuses': list(status_count.keys()),
+        'counts': list(status_count.values())
+    })
+
+
+@faculty_bp.route('/api/analytics/publications')
+@login_required
+@role_required('Faculty')
+def analytics_publications():
+    """Get publication status breakdown for faculty's projects"""
+    faculty_id = session['user_id']
+    
+    publications = db.session.query(Publication, ResearchProject).filter(
+        ResearchProject.faculty_id == faculty_id,
+        Publication.project_id == ResearchProject.project_id
+    ).all()
+    
+    status_count = {
+        'Submitted': 0,
+        'Accepted': 0,
+        'Published': 0,
+        'Rejected': 0
+    }
+    
+    for pub, _ in publications:
+        if pub.status in status_count:
+            status_count[pub.status] += 1
+    
+    return jsonify({
+        'statuses': list(status_count.keys()),
+        'counts': list(status_count.values())
+    })
+
+
+@faculty_bp.route('/api/analytics/iprs')
+@login_required
+@role_required('Faculty')
+def analytics_iprs():
+    """Get IPR grant status distribution for faculty's projects"""
+    faculty_id = session['user_id']
+    
+    iprs = db.session.query(IPR, Publication, ResearchProject).filter(
+        ResearchProject.faculty_id == faculty_id,
+        Publication.project_id == ResearchProject.project_id,
+        IPR.publication_id == Publication.publication_id
+    ).all()
+    
+    status_count = {
+        'Filed': 0,
+        'Pending': 0,
+        'Granted': 0,
+        'Rejected': 0
+    }
+    
+    for ipr, _, _ in iprs:
+        if ipr.grant_status in status_count:
+            status_count[ipr.grant_status] += 1
+    
+    return jsonify({
+        'statuses': list(status_count.keys()),
+        'counts': list(status_count.values())
+    })
+
+
+@faculty_bp.route('/api/analytics/team')
+@login_required
+@role_required('Faculty')
+def analytics_team():
+    """Get team composition for faculty's projects"""
+    faculty_id = session['user_id']
+    
+    projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
+    project_ids = [p.project_id for p in projects]
+    
+    if not project_ids:
+        return jsonify({
+            'projects': [],
+            'team_sizes': []
+        })
+    
+    team_data = db.session.query(
+        ResearchProject.project_id,
+        ResearchProject.title,
+        db.func.count(ProjectPerson.person_id)
+    ).filter(
+        ResearchProject.project_id.in_(project_ids),
+        ProjectPerson.project_id == ResearchProject.project_id
+    ).group_by(ResearchProject.project_id).all()
+    
+    project_titles = [item[1] for item in team_data]
+    team_sizes = [item[2] for item in team_data]
+    
+    return jsonify({
+        'projects': project_titles,
+        'team_sizes': team_sizes
+    })

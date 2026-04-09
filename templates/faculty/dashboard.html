@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Statistics Cards -->
 <div class="row">
     <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3">
+        <div class="card text-white bg-primary mb-3 stat-card">
             <div class="card-body">
                 <h5 class="card-title">Total Projects</h5>
                 <p class="card-text fs-4">{{ total_projects }}</p>
@@ -11,7 +12,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-success mb-3">
+        <div class="card text-white bg-success mb-3 stat-card">
             <div class="card-body">
                 <h5 class="card-title">Ongoing Projects</h5>
                 <p class="card-text fs-4">{{ ongoing_projects }}</p>
@@ -19,7 +20,7 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-info mb-3">
+        <div class="card text-white bg-info mb-3 stat-card">
             <div class="card-body">
                 <h5 class="card-title">Completed Projects</h5>
                 <p class="card-text fs-4">{{ completed_projects }}</p>
@@ -27,10 +28,55 @@
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3">
+        <div class="card text-white bg-warning mb-3 stat-card">
             <div class="card-body">
                 <h5 class="card-title">Startup Conversions</h5>
                 <p class="card-text fs-4">{{ startup_conversions }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytics Charts Section -->
+<div class="row mt-5 mb-4">
+    <h3 class="mb-4">Academic Analytics</h3>
+    
+    <!-- Project Status Distribution -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 shadow">
+            <h5 class="card-title">Project Status Distribution</h5>
+            <div class="chart-container">
+                <canvas id="projectChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Publication Status -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 shadow">
+            <h5 class="card-title">Publication Lifecycle</h5>
+            <div class="chart-container">
+                <canvas id="publicationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- IPR Grant Status -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 shadow">
+            <h5 class="card-title">IPR Grant Status Distribution</h5>
+            <div class="chart-container">
+                <canvas id="iprChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Size by Project -->
+    <div class="col-lg-6 mb-4">
+        <div class="card p-4 shadow">
+            <h5 class="card-title">Team Size by Project</h5>
+            <div class="chart-container">
+                <canvas id="teamChart"></canvas>
             </div>
         </div>
     </div>
@@ -123,5 +169,125 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+const colors = {
+  primary: ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6'],
+  surface: ['#ecf0f1', '#34495e', '#c0392b', '#27ae60', '#d35400']
+};
+
+// Project Status Distribution
+fetch('/faculty/api/analytics/projects')
+  .then(response => response.json())
+  .then(data => {
+    const ctx = document.getElementById('projectChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: data.statuses,
+        datasets: [{
+          data: data.counts,
+          backgroundColor: colors.primary.slice(0, data.statuses.length),
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  });
+
+// Publication Status
+fetch('/faculty/api/analytics/publications')
+  .then(response => response.json())
+  .then(data => {
+    const ctx = document.getElementById('publicationChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.statuses,
+        datasets: [{
+          label: 'Publications',
+          data: data.counts,
+          backgroundColor: colors.primary.slice(0, data.statuses.length),
+          borderColor: '#34495e',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  });
+
+// IPR Grant Status
+fetch('/faculty/api/analytics/iprs')
+  .then(response => response.json())
+  .then(data => {
+    const ctx = document.getElementById('iprChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: data.statuses,
+        datasets: [{
+          data: data.counts,
+          backgroundColor: colors.primary,
+          borderColor: '#fff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  });
+
+// Team Size by Project
+fetch('/faculty/api/analytics/team')
+  .then(response => response.json())
+  .then(data => {
+    const ctx = document.getElementById('teamChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.projects,
+        datasets: [{
+          label: 'Team Members',
+          data: data.team_sizes,
+          backgroundColor: colors.primary[0],
+          borderColor: '#34495e',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    });
+  });
+</script>
 
 {% endblock %}
