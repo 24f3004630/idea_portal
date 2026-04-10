@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session
 from database.db import db
 from database.models import Person
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 # ---------------- REGISTER STUDENT ----------------
 @auth_bp.route('/register/student', methods=['GET', 'POST'])
@@ -12,6 +12,12 @@ def register_student():
         email = request.form['email']
         password = request.form['password']
 
+        # Check if email already exists
+        existing_user = Person.query.filter_by(email=email).first()
+        if existing_user:
+            return render_template('auth/register_student.html', 
+                                 error="This email is already registered. Please use a different email or login.")
+
         user = Person(name=name, email=email, type='Student')
         user.set_password(password)
         user.is_approved = True
@@ -19,7 +25,7 @@ def register_student():
         db.session.add(user)
         db.session.commit()
 
-        return redirect('/login')
+        return redirect('/auth/login')
 
     return render_template('auth/register_student.html')
 
@@ -32,6 +38,12 @@ def register_faculty():
         email = request.form['email']
         password = request.form['password']
 
+        # Check if email already exists
+        existing_user = Person.query.filter_by(email=email).first()
+        if existing_user:
+            return render_template('auth/register_faculty.html', 
+                                 error="This email is already registered. Please use a different email or login.")
+
         user = Person(name=name, email=email, type='Faculty')
         user.set_password(password)
         user.is_approved = False  # needs admin approval
@@ -39,7 +51,8 @@ def register_faculty():
         db.session.add(user)
         db.session.commit()
 
-        return "Waiting for admin approval"
+        return render_template('auth/register_faculty.html', 
+                             success="Registration submitted! Please wait for admin approval.")
 
     return render_template('auth/register_faculty.html')
 
@@ -77,4 +90,4 @@ def login():
 @auth_bp.route('/logout')
 def logout():
     session.clear()
-    return redirect('/login')
+    return redirect('/auth/login')
