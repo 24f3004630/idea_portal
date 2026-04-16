@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import session, redirect
+from flask import session, redirect, render_template, abort
 from database.models import Person, ResearchProject, ProjectApplication
 
 
@@ -7,7 +7,7 @@ def login_required(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect('/login')
+            return redirect('/auth/login')  # Fixed redirect path
         return f(*args, **kwargs)
     return wrapper
 
@@ -17,7 +17,7 @@ def role_required(role):
         @wraps(f)
         def wrapper(*args, **kwargs):
             if session.get('role') != role:
-                return "Unauthorized Access"
+                abort(403)  # Return proper 403 error instead of plain text
             return f(*args, **kwargs)
         return wrapper
     return decorator
@@ -29,7 +29,7 @@ def approved_required(f):
     def wrapper(*args, **kwargs):
         user = Person.query.get(session.get('user_id'))
         if not user or not user.is_approved:
-            return "User is not approved", 403
+            abort(403)  # Return proper 403 error instead of plain text
         return f(*args, **kwargs)
     return wrapper
 
@@ -40,7 +40,7 @@ def faculty_can_create_projects(f):
     def wrapper(*args, **kwargs):
         user = Person.query.get(session.get('user_id'))
         if not user or not user.can_create_projects():
-            return "Only approved faculty can create projects", 403
+            abort(403)
         return f(*args, **kwargs)
     return wrapper
 
@@ -51,7 +51,7 @@ def student_can_join_approved_projects(f):
     def wrapper(*args, **kwargs):
         user = Person.query.get(session.get('user_id'))
         if not user or user.type != 'Student':
-            return "Only students can join projects", 403
+            abort(403)
         return f(*args, **kwargs)
     return wrapper
 
@@ -62,7 +62,7 @@ def admin_or_faculty_required(f):
     def wrapper(*args, **kwargs):
         role = session.get('role')
         if role not in ['Admin', 'Faculty']:
-            return "Unauthorized Access", 403
+            abort(403)
         return f(*args, **kwargs)
     return wrapper
 
@@ -76,7 +76,7 @@ def project_owner_or_admin(f):
         user = Person.query.get(user_id)
         
         if not user:
-            return redirect('/login')
+            return redirect('/auth/login')
         
         if user.type == 'Admin':
             return f(*args, **kwargs)
@@ -86,5 +86,5 @@ def project_owner_or_admin(f):
             if project and project.faculty_id == user_id:
                 return f(*args, **kwargs)
         
-        return "Unauthorized Access", 403
+        abort(403)
     return wrapper

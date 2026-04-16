@@ -1,10 +1,15 @@
-from flask import Flask
+from flask import Flask, render_template, session
 from config import Config
 from database.db import db
 
 # CREATE APP FIRST
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Set session configuration
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
 # INIT DB
 db.init_app(app)
@@ -39,10 +44,28 @@ with app.app_context():
         db.session.add(admin)
         db.session.commit()
 
-# TEST ROUTE
+# PUBLIC HOME ROUTE
 @app.route('/')
 def home():
-    return "App Running"
+    """Public home page for all users"""
+    return render_template('home.html', user=session.get('user_id'))
+
+# ERROR HANDLERS
+@app.errorhandler(403)
+def forbidden(error):
+    """Handle 403 Forbidden errors"""
+    return render_template('errors/403.html'), 403
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 Not Found errors"""
+    return render_template('errors/404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 Internal Server errors"""
+    db.session.rollback()
+    return render_template('errors/500.html'), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8000)

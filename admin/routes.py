@@ -337,4 +337,223 @@ def view_startups():
         })
     
     return render_template('admin/startups.html', startup_data=startup_data)
-    return redirect('/admin/projects')
+
+
+# ==================== STARTUP UPDATE ====================
+@admin_bp.route('/startup/<int:startup_id>/update', methods=['POST'])
+@login_required
+@role_required('Admin')
+def update_startup(startup_id):
+    """Update startup details"""
+    startup = Startup.query.get(startup_id)
+    
+    if not startup:
+        return jsonify({'status': 'error', 'message': 'Startup not found'}), 404
+    
+    try:
+        startup.startup_name = request.form.get('startup_name', startup.startup_name)
+        startup.registration_number = request.form.get('registration_number', startup.registration_number)
+        startup.development_status = request.form.get('development_status', startup.development_status)
+        startup.fund_amount = float(request.form.get('fund_amount', startup.fund_amount) or 0)
+        startup.revenue_generated = float(request.form.get('revenue_generated', startup.revenue_generated) or 0)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Startup updated successfully',
+            'startup': {
+                'startup_id': startup.startup_id,
+                'startup_name': startup.startup_name,
+                'development_status': startup.development_status,
+                'fund_amount': startup.fund_amount,
+                'revenue_generated': startup.revenue_generated
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ==================== ACCREDITATION REPORTS ====================
+@admin_bp.route('/accreditation')
+@login_required
+@role_required('Admin')
+def accreditation_dashboard():
+    """Accreditation report dashboard"""
+    from accreditation.generator import AccreditationReportGenerator
+    
+    current_year = request.args.get('year', default=datetime.now().year, type=int)
+    
+    generator = AccreditationReportGenerator()
+    report = generator.generate_comprehensive_report(current_year)
+    
+    return render_template('admin/accreditation.html', 
+                         report=report,
+                         current_year=current_year,
+                         available_years=list(range(2020, datetime.now().year + 1)))
+
+
+@admin_bp.route('/accreditation/generate', methods=['POST'])
+@login_required
+@role_required('Admin')
+def generate_accreditation_report():
+    """Generate accreditation report (supports JSON and PDF)"""
+    from accreditation.generator import AccreditationReportGenerator
+    from datetime import datetime
+    
+    year = request.json.get('year') if request.is_json else request.form.get('year')
+    report_type = request.json.get('format', 'json') if request.is_json else request.form.get('format', 'json')
+    
+    try:
+        generator = AccreditationReportGenerator()
+        
+        if report_type == 'pdf':
+            pdf_data = generator.generate_pdf_report(year)
+            return jsonify({
+                'status': 'success',
+                'message': 'Report generated successfully',
+                'filename': pdf_data['filename'],
+                'data': pdf_data['data']
+            })
+        else:
+            report = generator.generate_comprehensive_report(year)
+            return jsonify({
+                'status': 'success',
+                'message': 'Report generated successfully',
+                'data': report
+            })
+    
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to generate report: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/accreditation/download/<format>')
+@login_required
+@role_required('Admin')
+def download_accreditation_report(format):
+    """Download accreditation report in specified format"""
+    from accreditation.generator import AccreditationReportGenerator
+    from flask import send_file
+    import csv
+    from io import StringIO, BytesIO
+    
+    year = request.args.get('year', default=datetime.now().year, type=int)
+    
+    try:
+        generator = AccreditationReportGenerator()
+        report = generator.generate_comprehensive_report(year)
+        
+        if format == 'json':
+            json_data = generator.export_to_json(year)
+            return send_file(
+                BytesIO(json_data.encode()),
+                mimetype='application/json',
+                as_attachment=True,
+                download_name=f'CCEW_Accreditation_{year}.json'
+            )
+        
+        elif format == 'csv':
+            # Convert report to CSV
+            output = StringIO()
+            writer = csv.writer(output)
+            
+            writer.writerow(['Metric', 'Value'])
+            writer.writerow([])
+            
+            writer.writerow(['PROJECTS METRICS'])
+            for key, value in report['projects'].items():
+                if isinstance(value, (int, float)):
+                    writer.writerow([key, value])
+            
+            writer.writerow([])
+            writer.writerow(['PUBLICATION METRICS'])
+            for key, value in report['publications'].items():
+                if isinstance(value, (int, float)):
+                    writer.writerow([key, value])
+            
+            writer.writerow([])
+            writer.writerow(['IPR METRICS'])
+            for key, value in report['iprs'].items():
+                if isinstance(value, (int, float)):
+                    writer.writerow([key, value])
+            
+            writer.writerow([])
+            writer.writerow(['STARTUP METRICS'])
+            for key, value in report['startups'].items():
+                if isinstance(value, (int, float)):
+                    writer.writerow([key, value])
+            
+            output.seek(0)
+            return send_file(
+                BytesIO(output.getvalue().encode()),
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name=f'CCEW_Accreditation_{year}.csv'
+            )
+    
+    except Exception as e:
+        return f"Error generating report: {str(e)}", 500
+
+
+# ==================== PROJECT APPROVAL WORKFLOW ====================
+@admin_bp.route('/projects/pending-approval')
+@login_required
+@role_required('Admin')
+def pending_projects():
+    """View projects pending admin approval"""
+    pending = ResearchProject.query.filter_by(is_approved=False).all()
+    
+    projects_data = []
+    for project in pending:
+        faculty = Person.query.get(project.faculty_id)
+        team_members = ProjectPerson.query.filter_by(project_id=project.project_id).count()
+        
+        projects_data.append({
+            'project': project,
+            'faculty': faculty,
+            'team_members': team_members
+        })
+    
+    return render_template('admin/pending_projects.html', projects_data=projects_data)
+
+
+@admin_bp.route('/project/<int:project_id>/approve-with-comments', methods=['POST'])
+@login_required
+@role_required('Admin')
+def approve_project_with_comments(project_id):
+    """Approve project with optional comments"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project:
+        return jsonify({'status': 'error', 'message': 'Project not found'}), 404
+    
+    try:
+        project.is_approved = True
+        
+        # Update project status if Proposed
+        if project.project_status == 'Proposed':
+            project.project_status = 'Ongoing'
+        
+        # Store approval comments if provided
+        comments = request.form.get('approval_comments')
+        if comments:
+            # Could store in a separate ApprovalNotes table if needed
+            pass
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Project approved successfully',
+            'project_id': project_id
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+from datetime import datetime
