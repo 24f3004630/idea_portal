@@ -87,7 +87,17 @@ def create_project():
             )
             db.session.add(project_person)
             db.session.commit()
-            
+
+            # Notify admin about the new project submission
+            try:
+                from tasks.mail_tasks import send_project_submitted_email
+                send_project_submitted_email.delay(project.project_id)
+            except Exception as mail_exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Could not queue project submission email: {mail_exc}"
+                )
+
             return redirect(f'/faculty/project/{project.project_id}')
         except Exception as e:
             return f"Error creating project: {str(e)}"
@@ -221,7 +231,19 @@ def add_student_to_project(project_id):
         )
         db.session.add(project_person)
         db.session.commit()
-        
+
+        # Notify student they've been added to the project
+        try:
+            from tasks.mail_tasks import send_student_join_approved_email
+            send_student_join_approved_email.delay(
+                int(student_id), project_id, role
+            )
+        except Exception as mail_exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Could not queue student join email: {mail_exc}"
+            )
+
         return redirect(f'/faculty/project/{project_id}')
     except Exception as e:
         return f"Error adding student: {str(e)}", 400

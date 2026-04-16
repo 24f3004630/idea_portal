@@ -3,8 +3,21 @@ from database.models import Person, ResearchProject, Publication, IPR, Startup, 
 from database.db import db
 from auth.decorators import login_required, role_required
 from sqlalchemy import func
+from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+def _fire_task(task_fn, *args, **kwargs):
+    """Fire a Celery task safely; log and continue if Celery/Redis is unavailable."""
+    import logging
+    try:
+        task_fn.delay(*args, **kwargs)
+    except Exception as exc:
+        logging.getLogger(__name__).warning(
+            f"[admin] Could not queue task {task_fn.name}: {exc}"
+        )
+
 
 
 # ---------------- DASHBOARD ----------------
@@ -153,6 +166,10 @@ def approve_user(user_id):
     if user:
         user.is_approved = True
         db.session.commit()
+        # Email the faculty that their account is now active
+        if user.type == 'Faculty':
+            from tasks.mail_tasks import send_faculty_approved_email
+            _fire_task(send_faculty_approved_email, user.person_id)
     return redirect('/admin/users')
 
 
@@ -398,37 +415,110 @@ def accreditation_dashboard():
 @login_required
 @role_required('Admin')
 def generate_accreditation_report():
-    """Generate accreditation report (supports JSON and PDF)"""
-    from accreditation.generator import AccreditationReportGenerator
-    from datetime import datetime
-    
-    year = request.json.get('year') if request.is_json else request.form.get('year')
-    report_type = request.json.get('format', 'json') if request.is_json else request.form.get('format', 'json')
-    
+    """Dispatch accreditation report generation as a Celery background task."""
+    data = request.get_json(silent=True) or request.form
+    year = data.get('year', datetime.now().year)
+    report_format = data.get('format', 'pdf')
+
     try:
-        generator = AccreditationReportGenerator()
-        
-        if report_type == 'pdf':
-            pdf_data = generator.generate_pdf_report(year)
-            return jsonify({
-                'status': 'success',
-                'message': 'Report generated successfully',
-                'filename': pdf_data['filename'],
-                'data': pdf_data['data']
-            })
+        year = int(year)
+    except (TypeError, ValueError):
+        year = datetime.now().year
+
+    try:
+        if report_format == 'csv':
+            from tasks.report_tasks import generate_accreditation_csv
+            task = generate_accreditation_csv.delay(year)
         else:
-            report = generator.generate_comprehensive_report(year)
-            return jsonify({
-                'status': 'success',
-                'message': 'Report generated successfully',
-                'data': report
-            })
-    
-    except Exception as e:
+            from tasks.report_tasks import generate_accreditation_pdf
+            task = generate_accreditation_pdf.delay(year)
+
         return jsonify({
-            'status': 'error',
-            'message': f'Failed to generate report: {str(e)}'
-        }), 500
+            'status': 'queued',
+            'task_id': task.id,
+            'year': year,
+            'format': report_format,
+            'message': f'{report_format.upper()} report generation started. '
+                       f'Poll /admin/task-status/{task.id} for progress.',
+            'poll_url': f'/admin/task-status/{task.id}',
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ==================== TASK STATUS POLLING ====================
+@admin_bp.route('/task-status/<task_id>')
+@login_required
+@role_required('Admin')
+def task_status(task_id):
+    """
+    Poll the status of any Celery background task.
+    State values: PENDING | STARTED | PROGRESS | SUCCESS | FAILURE
+    """
+    from app import celery
+    from celery.result import AsyncResult
+
+    result = AsyncResult(task_id, app=celery)
+    state = result.state
+
+    if state == 'PENDING':
+        response = {'state': state, 'status': 'Task is waiting to be picked up by a worker…'}
+    elif state == 'STARTED':
+        response = {'state': state, 'status': 'Task has started…'}
+    elif state == 'PROGRESS':
+        meta = result.info or {}
+        response = {
+            'state': state,
+            'step': meta.get('step', ''),
+            'pct': meta.get('pct', 0),
+        }
+    elif state == 'SUCCESS':
+        response = {'state': state, 'result': result.result}
+    else:  # FAILURE or REVOKED
+        response = {
+            'state': state,
+            'error': str(result.info) if result.info else 'Unknown error',
+        }
+
+    return jsonify(response)
+
+
+# ==================== MANUAL REMINDER TRIGGER ====================
+@admin_bp.route('/send-reminder', methods=['POST'])
+@login_required
+@role_required('Admin')
+def send_reminder():
+    """
+    Manually trigger the weekly report-fill reminder blast.
+    Sends emails to all active faculty + students immediately.
+    POST body (JSON or form): { "target": "all" | "faculty" | "students" }
+    """
+    from tasks.mail_tasks import (
+        send_report_reminder_all_faculty,
+        send_report_reminder_all_students,
+    )
+
+    data = request.get_json(silent=True) or request.form
+    target = (data.get('target') or 'all').lower()
+    queued = []
+
+    try:
+        if target in ('all', 'faculty'):
+            t1 = send_report_reminder_all_faculty.delay()
+            queued.append({'audience': 'faculty', 'task_id': t1.id})
+
+        if target in ('all', 'students'):
+            t2 = send_report_reminder_all_students.delay()
+            queued.append({'audience': 'students', 'task_id': t2.id})
+
+        return jsonify({
+            'status': 'queued',
+            'message': 'Reminder emails are being sent in the background.',
+            'tasks': queued,
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 
 @admin_bp.route('/accreditation/download/<format>')
@@ -533,19 +623,23 @@ def approve_project_with_comments(project_id):
     
     try:
         project.is_approved = True
-        
+
         # Update project status if Proposed
         if project.project_status == 'Proposed':
             project.project_status = 'Ongoing'
-        
+
         # Store approval comments if provided
         comments = request.form.get('approval_comments')
         if comments:
             # Could store in a separate ApprovalNotes table if needed
             pass
-        
+
         db.session.commit()
-        
+
+        # Email the faculty that their project is approved
+        from tasks.mail_tasks import send_project_approved_email
+        _fire_task(send_project_approved_email, project_id)
+
         return jsonify({
             'status': 'success',
             'message': 'Project approved successfully',

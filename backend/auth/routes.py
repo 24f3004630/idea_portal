@@ -100,6 +100,17 @@ def register_faculty():
             db.session.add(user)
             db.session.commit()
 
+            # Notify admin via Celery background task
+            try:
+                from tasks.mail_tasks import send_faculty_registration_pending
+                send_faculty_registration_pending.delay(user.person_id)
+            except Exception as mail_exc:
+                # Non-critical — log but don't fail the registration
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Could not queue faculty registration email: {mail_exc}"
+                )
+
             return render_template('auth/register_faculty.html', 
                                  success="Registration submitted! Please wait for admin approval. You will receive an email notification.")
         except Exception as e:
