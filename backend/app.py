@@ -21,7 +21,9 @@ celery = Celery(__name__)
 
 def create_app(config_class=Config):
     """Application factory — creates and configures the Flask app."""
-    app = Flask(__name__)
+    # Point to frontend/templates directory (one level up)
+    template_folder = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'templates')
+    app = Flask(__name__, template_folder=template_folder)
     app.config.from_object(config_class)
 
     # Session settings
