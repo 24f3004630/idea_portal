@@ -2,9 +2,53 @@
 
 {% block content %}
 
+<style>
+    .startup-card {
+        border-left: 5px solid #28a745;
+        transition: all 0.3s ease;
+    }
+    
+    .startup-card:hover {
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.2);
+    }
+    
+    .status-badge-idea { background-color: #6c757d !important; }
+    .status-badge-mvp { background-color: #0dcaf0 !important; }
+    .status-badge-beta { background-color: #ffc107 !important; }
+    .status-badge-live { background-color: #198754 !important; }
+    .status-badge-growth { background-color: #0d6efd !important; }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .metric-card h6 {
+        font-size: 0.85rem;
+        opacity: 0.9;
+        margin-bottom: 10px;
+    }
+    
+    .metric-card h3 {
+        font-size: 2.5rem;
+        font-weight: bold;
+    }
+    
+    .metric-card.green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .metric-card.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .metric-card.orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .metric-card.purple { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+</style>
+
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-rocket"></i> Startup Management</h2>
+        <div>
+            <h2><i class="fas fa-rocket"></i> Startup Management</h2>
+            <p class="text-muted">Track and manage all incubated startups from research projects</p>
+        </div>
         <a href="/admin/dashboard" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Back to Dashboard
         </a>
@@ -14,64 +58,73 @@
         <div class="row">
             {% for item in startup_data %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <!-- Card Header -->
-                    <div class="card-header bg-success text-white">
-                        <h5 class="card-title mb-0">
-                            <i class="fas fa-rocket"></i> {{ item.startup.startup_name }}
-                        </h5>
+                <div class="card h-100 shadow-sm startup-card">
+                    <!-- Card Header with Status Badge -->
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-rocket"></i> {{ item.startup.startup_name }}
+                                </h5>
+                            </div>
+                            {% if item.startup.development_status == 'Idea' %}
+                                <span class="badge status-badge-idea">Idea</span>
+                            {% elif item.startup.development_status == 'MVP' %}
+                                <span class="badge status-badge-mvp">MVP</span>
+                            {% elif item.startup.development_status == 'Beta' %}
+                                <span class="badge status-badge-beta">Beta</span>
+                            {% elif item.startup.development_status == 'Live' %}
+                                <span class="badge status-badge-live">Live</span>
+                            {% elif item.startup.development_status == 'Growth' %}
+                                <span class="badge status-badge-growth">Growth</span>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <!-- Card Body -->
                     <div class="card-body">
-                        <!-- Startup Name -->
-                        <div class="mb-3">
-                            <strong>Startup Name:</strong>
-                            <p class="text-muted">{{ item.startup.startup_name }}</p>
+                        <!-- Startup Name (Duplicate info divider) -->
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-building"></i> Startup Name</strong>
+                            <p class="text-muted mb-0">{{ item.startup.startup_name }}</p>
                         </div>
 
-                        <!-- Registration Number -->
+                        <!-- Registration Details -->
                         {% if item.startup.registration_number %}
-                        <div class="mb-3">
-                            <strong>Registration Number:</strong>
-                            <p class="text-muted"><code>{{ item.startup.registration_number }}</code></p>
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-certificate"></i> Registration Number</strong>
+                            <p class="text-muted mb-0"><code>{{ item.startup.registration_number }}</code></p>
                         </div>
                         {% endif %}
 
                         <!-- Development Status -->
-                        <div class="mb-3">
-                            <strong>Development Status:</strong>
-                            <br>
-                            {% if item.startup.development_status == 'Idea' %}
-                                <span class="badge bg-secondary">{{ item.startup.development_status }}</span>
-                            {% elif item.startup.development_status == 'MVP' %}
-                                <span class="badge bg-info">{{ item.startup.development_status }}</span>
-                            {% elif item.startup.development_status == 'Beta' %}
-                                <span class="badge bg-warning text-dark">{{ item.startup.development_status }}</span>
-                            {% elif item.startup.development_status == 'Live' %}
-                                <span class="badge bg-success">{{ item.startup.development_status }}</span>
-                            {% elif item.startup.development_status == 'Growth' %}
-                                <span class="badge bg-primary">{{ item.startup.development_status }}</span>
-                            {% endif %}
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-chart-line"></i> Development Stage</strong>
+                            <p class="mb-0">
+                                <span class="badge bg-light text-dark">{{ item.startup.development_status }}</span>
+                            </p>
                         </div>
 
-                        <!-- Fund Amount -->
-                        <div class="mb-3">
-                            <strong>Fund Amount:</strong>
-                            <p class="text-muted">₹ {{ "%.2f"|format(item.startup.fund_amount) }}</p>
-                        </div>
-
-                        <!-- Revenue Generated -->
-                        <div class="mb-3">
-                            <strong>Revenue Generated:</strong>
-                            <p class="text-muted">₹ {{ "%.2f"|format(item.startup.revenue_generated) }}</p>
+                        <!-- Financial Metrics -->
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-money-bill-wave"></i> Financial Status</strong>
+                            <div class="row text-center mt-2">
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Funding</small>
+                                    <strong class="text-success">₹{{ "%.0f"|format(item.startup.fund_amount) }}</strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted d-block">Revenue</small>
+                                    <strong class="text-info">₹{{ "%.0f"|format(item.startup.revenue_generated) }}</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Project Link -->
                         {% if item.project %}
-                        <div class="mb-3">
-                            <strong>Associated Project:</strong>
-                            <p>
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-project-diagram"></i> Associated Project</strong>
+                            <p class="mb-0">
                                 <a href="/admin/project/{{ item.project.project_id }}/lifecycle" class="text-decoration-none">
                                     {{ item.project.project_title }}
                                 </a>
@@ -79,22 +132,26 @@
                         </div>
                         {% endif %}
 
-                        <!-- Faculty -->
+                        <!-- Faculty Lead -->
                         {% if item.faculty %}
-                        <div class="mb-3">
-                            <strong>Faculty Lead:</strong>
-                            <p class="text-muted">
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-user-tie"></i> Faculty Lead</strong>
+                            <p class="text-muted mb-0">
                                 {{ item.faculty.name }}
                                 <br>
-                                <small>{{ item.faculty.department }}</small>
+                                <small class="text-secondary">{{ item.faculty.department }}</small>
                             </p>
                         </div>
                         {% endif %}
 
-                        <!-- Created Date -->
+                        <!-- Timeline -->
                         <div class="mb-3">
-                            <strong>Created:</strong>
-                            <p class="text-muted">{{ item.startup.created_at.strftime('%d-%b-%Y') }}</p>
+                            <strong><i class="fas fa-calendar-alt"></i> Timeline</strong>
+                            <p class="text-muted mb-0">
+                                <small>Created: {{ item.startup.created_at.strftime('%d-%b-%Y') }}</small>
+                                <br>
+                                <small>Updated: {{ item.startup.updated_at.strftime('%d-%b-%Y') }}</small>
+                            </p>
                         </div>
                     </div>
 
@@ -103,7 +160,7 @@
                         <div class="btn-group btn-group-sm w-100" role="group">
                             {% if item.project %}
                             <a href="/admin/project/{{ item.project.project_id }}/lifecycle" class="btn btn-outline-primary" title="View Project">
-                                <i class="fas fa-eye"></i> View Project
+                                <i class="fas fa-eye"></i> Project
                             </a>
                             {% endif %}
                             <a href="#" class="btn btn-outline-warning" title="Edit" data-bs-toggle="modal" data-bs-target="#editModal{{ item.startup.startup_id }}">
@@ -127,79 +184,101 @@
 
 <!-- Statistics Section -->
 {% if startup_data %}
-<div class="container-fluid mt-5">
-    <h3 class="mb-4"><i class="fas fa-chart-bar"></i> Startup Statistics</h3>
+<div class="container-fluid mt-5 mb-5">
+    <h3 class="mb-4"><i class="fas fa-chart-bar"></i> Startup Analytics</h3>
     
-    <div class="row">
+    <!-- Key Metrics -->
+    <div class="row mb-5">
         <!-- Total Startups -->
-        <div class="col-md-3 mb-4">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Total Startups</h5>
-                    <h2 class="text-primary">{{ startup_data|length }}</h2>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="metric-card blue">
+                <h6>TOTAL STARTUPS</h6>
+                <h3>{{ startup_data|length }}</h3>
             </div>
         </div>
 
         <!-- Total Funding -->
-        <div class="col-md-3 mb-4">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Total Funding</h5>
-                    <h2 class="text-success">
-                        ₹ {{ "%.0f"|format(startup_data|map(attribute='startup')|map(attribute='fund_amount')|sum) }}
-                    </h2>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="metric-card green">
+                <h6>TOTAL FUNDING RAISED</h6>
+                <h3>₹{{ "%.0f"|format(startup_data|map(attribute='startup')|map(attribute='fund_amount')|sum / 100000) }}L</h3>
             </div>
         </div>
 
         <!-- Total Revenue -->
-        <div class="col-md-3 mb-4">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Total Revenue</h5>
-                    <h2 class="text-info">
-                        ₹ {{ "%.0f"|format(startup_data|map(attribute='startup')|map(attribute='revenue_generated')|sum) }}
-                    </h2>
-                </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="metric-card orange">
+                <h6>TOTAL REVENUE GENERATED</h6>
+                <h3>₹{{ "%.0f"|format(startup_data|map(attribute='startup')|map(attribute='revenue_generated')|sum / 100000) }}L</h3>
             </div>
         </div>
 
-        <!-- Status Distribution -->
-        <div class="col-md-3 mb-4">
-            <div class="card bg-light">
-                <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Live Startups</h5>
-                    <h2 class="text-success">
-                        {% set live_count = startup_data|selectattr('startup.development_status', 'equalto', 'Live')|list|length %}
-                        {{ live_count }}
-                    </h2>
-                </div>
+        <!-- Live Startups -->
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="metric-card purple">
+                <h6>LIVE STARTUPS</h6>
+                <h3>
+                    {% set live_count = startup_data|selectattr('startup.development_status', 'equalto', 'Live')|list|length %}
+                    {{ live_count }}
+                </h3>
             </div>
         </div>
     </div>
 
-    <!-- Status Breakdown -->
-    <div class="card mt-4">
+    <!-- Status Distribution -->
+    <div class="card">
         <div class="card-header bg-light border-bottom">
-            <h5 class="card-title mb-0">Status Breakdown</h5>
+            <h5 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Development Stage Distribution</h5>
         </div>
         <div class="card-body">
             <div class="row">
                 {% set statuses = ['Idea', 'MVP', 'Beta', 'Live', 'Growth'] %}
                 {% for status in statuses %}
                     {% set status_count = startup_data|selectattr('startup.development_status', 'equalto', status)|list|length %}
-                    <div class="col-md-2 text-center mb-3">
-                        <h5 class="text-muted">{{ status }}</h5>
-                        <h3>{{ status_count }}</h3>
-                        <div class="progress" style="height: 20px;">
-                            {% if startup_data|length > 0 %}
-                                {% set percentage = (status_count / (startup_data|length)) * 100 %}
-                                <div class="progress-bar" style="width: {{ percentage }}%"></div>
-                            {% endif %}
+                    <div class="col-md-2 col-sm-4 text-center mb-3">
+                        <div class="p-3 bg-light rounded">
+                            <h5 class="text-muted mb-2">{{ status }}</h5>
+                            <h3 class="text-primary">{{ status_count }}</h3>
+                            <div class="progress mt-2" style="height: 8px;">
+                                {% if startup_data|length > 0 %}
+                                    {% set percentage = (status_count / (startup_data|length)) * 100 %}
+                                    <div class="progress-bar bg-primary" style="width: {{ percentage }}%"></div>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                {% if startup_data|length > 0 %}
+                                    {% set percentage = (status_count / (startup_data|length)) * 100 %}
+                                    {{ "%.1f"|format(percentage) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </small>
                         </div>
                     </div>
                 {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Financial Analysis -->
+    <div class="card mt-4">
+        <div class="card-header bg-light border-bottom">
+            <h5 class="card-title mb-0"><i class="fas fa-money-bill-wave"></i> Financial Performance</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Average Funding per Startup</h6>
+                    <h3 class="text-success">
+                        ₹{{ "%.0f"|format((startup_data|map(attribute='startup')|map(attribute='fund_amount')|sum) / (startup_data|length)) }}
+                    </h3>
+                </div>
+                <div class="col-md-6">
+                    <h6>Average Revenue per Startup</h6>
+                    <h3 class="text-info">
+                        ₹{{ "%.0f"|format((startup_data|map(attribute='startup')|map(attribute='revenue_generated')|sum) / (startup_data|length)) }}
+                    </h3>
+                </div>
             </div>
         </div>
     </div>

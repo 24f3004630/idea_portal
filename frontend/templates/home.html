@@ -32,17 +32,33 @@
             padding: 15px 0;
         }
         
+        /* Navbar Brand Styling */
         .navbar-brand {
             font-weight: 700;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: white !important;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
         }
         
-        .navbar-brand img {
-            height: 40px;
+        .navbar-brand:hover {
+            opacity: 0.9;
+        }
+        
+        .navbar-logo {
+            height: 55px;
             width: auto;
+            display: block;
+            flex-shrink: 0;
+        }
+        
+        .navbar-brand .brand-text {
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
         }
         
         .navbar-dark .navbar-nav .nav-link {
@@ -86,7 +102,7 @@
         }
         
         .hero-logo img {
-            max-width: 100px;
+            max-width: 150px;
             height: auto;
             filter: brightness(0) invert(1);
             animation: slideDown 0.8s ease;
@@ -310,6 +326,14 @@
         
         /* Responsive */
         @media (max-width: 768px) {
+            .navbar-logo {
+                height: 45px;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            
             .hero h1 {
                 font-size: 2rem;
             }
@@ -334,6 +358,17 @@
                 max-width: 300px;
             }
         }
+        
+        @media (max-width: 576px) {
+            .navbar-logo {
+                height: 40px;
+            }
+            
+            .navbar-brand {
+                gap: 8px;
+                font-size: 0.95rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -341,8 +376,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">
-                <img src="https://upload.wikimedia.org/wikipedia/en/2/28/Cummins_College_of_Engineering_for_Women_Logo.png" alt="CCEW Logo" style="filter: brightness(0) invert(1);">
-                <span>CCEW Portal</span>
+                <img class="navbar-logo" src="https://cumminscollege.org/wp-content/uploads/2024/06/mksss-cummins-college-of-engineering-logo.png" alt="Cummins College Logo">
+                <span class="brand-text">CCEW Portal</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -367,7 +402,7 @@
     <section class="hero">
         <div class="hero-content">
             <div class="hero-logo">
-                <img src="https://upload.wikimedia.org/wikipedia/en/2/28/Cummins_College_of_Engineering_for_Women_Logo.png" alt="MKSSS Cummins College">
+                <img src="https://cumminscollege.org/wp-content/uploads/2024/06/mksss-cummins-college-of-engineering-logo.png" alt="MKSSS Cummins College">
             </div>
             <h1>Research & Innovation Portal</h1>
             <div class="college-name">MKSSS's Cummins College of Engineering for Women, Pune</div>
