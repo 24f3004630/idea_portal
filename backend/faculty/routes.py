@@ -801,3 +801,46 @@ def analytics_team():
         'projects': project_titles,
         'team_sizes': team_sizes
     })
+
+
+# ==================== VIEW ALL COMPETITIONS (Faculty) ====================
+@faculty_bp.route('/competitions')
+@login_required
+@role_required('Faculty')
+def view_all_competitions():
+    """View all competitions for all faculty projects"""
+    faculty_id = session['user_id']
+    
+    # Get all projects for this faculty
+    projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
+    project_ids = [p.project_id for p in projects]
+    
+    if not project_ids:
+        return render_template('faculty/competitions.html',
+                             project=None,
+                             competitions=[],
+                             all_faculty_competitions=True)
+    
+    # Get all competitions for these projects
+    project_competitions = db.session.query(
+        ProjectCompetition, Competition, ResearchProject
+    ).join(
+        Competition, ProjectCompetition.competition_id == Competition.competition_id
+    ).join(
+        ResearchProject, ProjectCompetition.project_id == ResearchProject.project_id
+    ).filter(
+        ProjectCompetition.project_id.in_(project_ids)
+    ).all()
+    
+    competitions = []
+    for pc, comp, proj in project_competitions:
+        competitions.append({
+            'project_competition': pc,
+            'competition': comp,
+            'project': proj
+        })
+    
+    return render_template('faculty/competitions.html',
+                         project=None,
+                         competitions=competitions,
+                         all_faculty_competitions=True)

@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, session, jsonify
 from database.db import db
 from database.models import (
-    Person, ResearchProject, ProjectPerson, ProjectApplication, Publication, IPR, Startup
+    Person, ResearchProject, ProjectPerson, ProjectApplication, Publication, IPR, Startup,
+    Competition, StudentCompetition
 )
 from auth.decorators import login_required, role_required, student_can_join_approved_projects
 from datetime import datetime
@@ -488,3 +489,96 @@ def analytics_skills_match():
         'projects': list(skill_match.keys()),
         'match_counts': list(skill_match.values())
     })
+
+
+# ==================== COMPETITIONS (Student Independent) ====================
+@student_bp.route('/competitions')
+@login_required
+@role_required('Student')
+def view_competitions():
+    """View all competitions added by the student"""
+    student_id = session['user_id']
+    
+    # Get all competitions added by this student
+    student_competitions = db.session.query(
+        StudentCompetition, Competition
+    ).join(
+        Competition, StudentCompetition.competition_id == Competition.competition_id
+    ).filter(
+        StudentCompetition.student_id == student_id
+    ).all()
+    
+    competitions = []
+    for sc, comp in student_competitions:
+        competitions.append({
+            'student_competition': sc,
+            'competition': comp
+        })
+    
+    return render_template('student/competitions.html', competitions=competitions)
+
+
+# ==================== ADD COMPETITION (Student) ====================
+@student_bp.route('/competition/add', methods=['GET', 'POST'])
+@login_required
+@role_required('Student')
+def add_competition():
+    """Add a competition (without needing faculty)"""
+    student_id = session['user_id']
+    
+    if request.method == 'POST':
+        try:
+            # Create competition
+            competition = Competition(
+                name=request.form.get('competition_name'),
+                venue=request.form.get('venue'),
+                organized_by=request.form.get('organized_by'),
+                start_date_of_competition=request.form.get('start_date_of_competition') or None,
+                end_date_of_competition=request.form.get('end_date_of_competition') or None
+            )
+            
+            db.session.add(competition)
+            db.session.flush()  # Get the competition_id without committing
+            
+            # Create student-competition link
+            student_competition = StudentCompetition(
+                student_id=student_id,
+                competition_id=competition.competition_id,
+                team_name=request.form.get('team_name'),
+                prize_money=float(request.form.get('prize_money', 0) or 0)
+            )
+            
+            db.session.add(student_competition)
+            db.session.commit()
+            
+            return redirect('/student/competitions')
+        except Exception as e:
+            db.session.rollback()
+            return f"Error adding competition: {str(e)}", 400
+    
+    return render_template('student/add_competition.html')
+
+
+# ==================== DELETE COMPETITION (Student) ====================
+@student_bp.route('/competition/<int:competition_id>/delete', methods=['GET', 'POST'])
+@login_required
+@role_required('Student')
+def delete_competition(competition_id):
+    """Delete a competition added by student"""
+    student_id = session['user_id']
+    
+    student_competition = StudentCompetition.query.filter_by(
+        competition_id=competition_id,
+        student_id=student_id
+    ).first()
+    
+    if not student_competition:
+        return "Competition not found or not yours", 404
+    
+    try:
+        db.session.delete(student_competition)
+        db.session.commit()
+        return redirect('/student/competitions')
+    except Exception as e:
+        db.session.rollback()
+        return f"Error deleting competition: {str(e)}", 400

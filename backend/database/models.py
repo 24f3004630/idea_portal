@@ -240,6 +240,21 @@ class ProjectCompetition(db.Model):
     prize_money_received = db.Column(db.Float)
 
 
+# ------------------ STUDENT_COMPETITION (Competition participation by students) ------------------
+class StudentCompetition(db.Model):
+    __tablename__ = 'student_competition'
+
+    student_competition_id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('person.person_id'))
+    competition_id = db.Column(db.Integer, db.ForeignKey('competition.competition_id'))
+
+    team_name = db.Column(db.String(100))  # Team name or individual name
+    prize_money = db.Column(db.Float, default=0)  # Prize won (if any)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ------------------ PROJECT APPLICATION / JOIN REQUEST ------------------
 class ProjectApplication(db.Model):
     __tablename__ = 'project_application'
