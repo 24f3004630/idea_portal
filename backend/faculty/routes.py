@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, jsonif
 from database.db import db
 from database.models import (
     Person, ResearchProject, ProjectPerson, Publication, IPR, Startup, 
-    Competition, Funder, ProjectFunding, PublicationAuthor, Author
+    Competition, ProjectCompetition, Funder, ProjectFunding, PublicationAuthor, Author
 )
 from auth.decorators import login_required, role_required, faculty_can_create_projects, approved_required
 from datetime import datetime
@@ -471,12 +471,42 @@ def add_funding(project_id):
     return render_template('faculty/add_funding.html', project=project)
 
 
-# ==================== ADD COMPETITION ====================
-@faculty_bp.route('/project/<int:project_id>/competition/add', methods=['GET', 'POST'])
+# ==================== COMPETITIONS LIST ====================
+@faculty_bp.route('/project/<int:project_id>/competitions')
+@login_required
+@role_required('Faculty')
+def view_competitions(project_id):
+    """View all competitions for a project"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or project.faculty_id != session['user_id']:
+        return "Unauthorized or Project not found", 404
+    
+    # Get all competitions for this project
+    project_competitions = db.session.query(ProjectCompetition, Competition).filter(
+        ProjectCompetition.project_id == project_id,
+        ProjectCompetition.competition_id == Competition.competition_id
+    ).all()
+    
+    competitions = []
+    for pc, comp in project_competitions:
+        competitions.append({
+            'project_competition': pc,
+            'competition': comp,
+            'project': project
+        })
+    
+    return render_template('faculty/competitions.html', 
+                         project=project,
+                         competitions=competitions)
+
+
+# ==================== ADD/UPDATE COMPETITION ====================
+@faculty_bp.route('/project/<int:project_id>/add-competition', methods=['GET', 'POST'])
 @login_required
 @role_required('Faculty')
 def add_competition(project_id):
-    """Add competition participation details"""
+    """Add or update competition participation details"""
     project = ResearchProject.query.get(project_id)
     
     if not project or project.faculty_id != session['user_id']:
@@ -484,22 +514,54 @@ def add_competition(project_id):
     
     if request.method == 'POST':
         try:
-            # TODO: Implement competition model linking if needed
-            # For now, store in project notes or create Competition model
+            # Create competition
             competition = Competition(
                 name=request.form.get('competition_name'),
                 venue=request.form.get('venue'),
-                organized_by=request.form.get('organized_by')
+                organized_by=request.form.get('organized_by'),
+                start_date_of_competition=request.form.get('start_date_of_competition') or None,
+                end_date_of_competition=request.form.get('end_date_of_competition') or None
             )
             
             db.session.add(competition)
+            db.session.flush()  # Get the competition_id without committing
+            
+            # Create project-competition link
+            project_competition = ProjectCompetition(
+                project_id=project_id,
+                competition_id=competition.competition_id,
+                team_name=request.form.get('team_name'),
+                prize_money_received=float(request.form.get('prize_money_received', 0) or 0)
+            )
+            
+            db.session.add(project_competition)
             db.session.commit()
             
-            return redirect(f'/faculty/project/{project_id}')
+            return redirect(f'/faculty/project/{project_id}/competitions')
         except Exception as e:
-            return f"Error adding competition: {str(e)}"
+            db.session.rollback()
+            return f"Error adding competition: {str(e)}", 400
     
     return render_template('faculty/add_competition.html', project=project)
+
+
+# ==================== VIEW STARTUP ====================
+@faculty_bp.route('/project/<int:project_id>/startup')
+@login_required
+@role_required('Faculty')
+def view_startup(project_id):
+    """View and manage startup status for a project"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or project.faculty_id != session['user_id']:
+        return "Unauthorized or Project not found", 404
+    
+    # Get startup if exists
+    startup = Startup.query.filter_by(project_id=project_id).first()
+    
+    return render_template('faculty/startup.html',
+                         project=project,
+                         startup=startup)
 
 
 # ==================== CONVERT PROJECT TO STARTUP ====================
@@ -525,7 +587,7 @@ def convert_to_startup(project_id):
                 startup_name=request.form.get('startup_name'),
                 registration_number=request.form.get('registration_number'),
                 development_status=request.form.get('development_status', 'Idea'),
-                fund_amount=float(request.form.get('fund_amount', 0))
+                fund_amount=float(request.form.get('fund_amount', 0) or 0)
             )
             
             db.session.add(startup)
@@ -535,9 +597,10 @@ def convert_to_startup(project_id):
             
             db.session.commit()
             
-            return redirect(f'/faculty/project/{project_id}')
+            return redirect(f'/faculty/project/{project_id}/startup')
         except Exception as e:
-            return f"Error converting to startup: {str(e)}"
+            db.session.rollback()
+            return f"Error converting to startup: {str(e)}", 400
     
     # Check if already a startup
     existing_startup = Startup.query.filter_by(project_id=project_id).first()
@@ -545,6 +608,36 @@ def convert_to_startup(project_id):
     return render_template('faculty/convert_startup.html', 
                          project=project, 
                          existing_startup=existing_startup)
+
+
+# ==================== UPDATE STARTUP ====================
+@faculty_bp.route('/project/<int:project_id>/startup/update', methods=['POST'])
+@login_required
+@role_required('Faculty')
+def update_startup(project_id):
+    """Update startup details for a project"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or project.faculty_id != session['user_id']:
+        return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+    
+    startup = Startup.query.filter_by(project_id=project_id).first()
+    if not startup:
+        return jsonify({'status': 'error', 'message': 'Startup not found'}), 404
+    
+    try:
+        startup.startup_name = request.form.get('startup_name', startup.startup_name)
+        startup.registration_number = request.form.get('registration_number', startup.registration_number)
+        startup.development_status = request.form.get('development_status', startup.development_status)
+        startup.fund_amount = float(request.form.get('fund_amount', startup.fund_amount) or 0)
+        startup.revenue_generated = float(request.form.get('revenue_generated', startup.revenue_generated) or 0)
+        
+        db.session.commit()
+        
+        return redirect(f'/faculty/project/{project_id}/startup')
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 # ==================== PROJECTS LIST ====================
