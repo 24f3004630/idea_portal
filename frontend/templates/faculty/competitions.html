@@ -9,23 +9,35 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-trophy"></i> Project Competitions</h2>
+        {% if all_faculty_competitions %}
+            <h2><i class="fas fa-trophy"></i> All My Competitions</h2>
+        {% else %}
+            <h2><i class="fas fa-trophy"></i> Project Competitions</h2>
+        {% endif %}
         <div class="btn-group">
             <button id="backBtn" class="btn btn-secondary" title="Go back to previous page">
                 <i class="fas fa-arrow-left"></i> Back
             </button>
+            {% if project %}
             <a href="/faculty/project/{{ project.project_id }}" class="btn btn-outline-secondary">
                 <i class="fas fa-home"></i> Project
             </a>
+            {% else %}
+            <a href="/faculty/dashboard" class="btn btn-outline-secondary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            {% endif %}
         </div>
     </div>
 
+    {% if project %}
     <div class="row mb-4">
         <div class="col-md-12">
             <p class="text-muted"><strong>Project:</strong> {{ project.project_title }}</p>
             <hr>
         </div>
     </div>
+    {% endif %}
 
     {% if project_competitions %}
         <div class="row">
@@ -41,6 +53,18 @@
 
                     <!-- Card Body -->
                     <div class="card-body">
+                        <!-- Project Name (only when viewing all competitions) -->
+                        {% if all_faculty_competitions %}
+                        <div class="mb-3 pb-3 border-bottom">
+                            <strong><i class="fas fa-project-diagram"></i> Project:</strong>
+                            <p class="text-muted mb-0">
+                                <a href="/faculty/project/{{ item.project.project_id }}" class="text-decoration-none">
+                                    {{ item.project.project_title }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+
                         <!-- Competition Name -->
                         <div class="mb-3">
                             <strong>Competition:</strong>
@@ -119,6 +143,7 @@
         </div>
 
         <!-- Add Competition Button -->
+        {% if project %}
         <div class="row mt-4">
             <div class="col-md-12">
                 <a href="/faculty/project/{{ project.project_id }}/add-competition" class="btn btn-primary btn-lg">
@@ -126,15 +151,24 @@
                 </a>
             </div>
         </div>
+        {% endif %}
     {% else %}
         <!-- Empty State -->
         <div class="alert alert-info text-center py-5" role="alert">
             <i class="fas fa-trophy fa-3x mb-3 text-muted" style="display: block;"></i>
-            <h4>No Competitions Added Yet</h4>
-            <p class="text-muted mb-3">This project hasn't participated in any competitions yet.</p>
-            <a href="/faculty/project/{{ project.project_id }}/add-competition" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add Competition
-            </a>
+            {% if all_faculty_competitions %}
+                <h4>No Competitions Yet</h4>
+                <p class="text-muted mb-3">You haven't added any competitions for your projects yet.</p>
+                <a href="/faculty/projects" class="btn btn-primary">
+                    <i class="fas fa-folder"></i> View Projects
+                </a>
+            {% else %}
+                <h4>No Competitions Added Yet</h4>
+                <p class="text-muted mb-3">This project hasn't participated in any competitions yet.</p>
+                <a href="/faculty/project/{{ project.project_id }}/add-competition" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Competition
+                </a>
+            {% endif %}
         </div>
     {% endif %}
 </div>

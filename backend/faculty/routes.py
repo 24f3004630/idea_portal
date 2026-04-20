@@ -2,7 +2,8 @@ from flask import Blueprint, render_template, request, redirect, session, jsonif
 from database.db import db
 from database.models import (
     Person, ResearchProject, ProjectPerson, Publication, IPR, Startup, 
-    Competition, ProjectCompetition, Funder, ProjectFunding, PublicationAuthor, Author
+    Competition, ProjectCompetition, Funder, ProjectFunding, PublicationAuthor, Author,
+    StudentCompetition
 )
 from auth.decorators import login_required, role_required, faculty_can_create_projects, approved_required
 from datetime import datetime
@@ -844,3 +845,73 @@ def view_all_competitions():
                          project=None,
                          competitions=competitions,
                          all_faculty_competitions=True)
+
+
+# ==================== STUDENT COMPETITIONS ====================
+@faculty_bp.route('/student-competitions')
+@login_required
+@role_required('Faculty')
+def view_student_competitions():
+    """View competitions that students mentored by this faculty participated in"""
+    faculty_id = session['user_id']
+    
+    # Get all projects for this faculty
+    projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
+    project_ids = [p.project_id for p in projects]
+    
+    if not project_ids:
+        return render_template('faculty/student_competitions.html', 
+                             student_competitions=[],
+                             total_prize_money=0)
+    
+    # Get all students on this faculty's projects
+    students = db.session.query(ProjectPerson, Person).filter(
+        ProjectPerson.project_id.in_(project_ids),
+        ProjectPerson.person_id == Person.person_id
+    ).all()
+    
+    student_ids = [pp.person_id for pp, _ in students]
+    
+    if not student_ids:
+        return render_template('faculty/student_competitions.html', 
+                             student_competitions=[],
+                             total_prize_money=0)
+    
+    # Get all competitions for these students
+    student_comps = db.session.query(
+        StudentCompetition, Competition, Person, ProjectPerson
+    ).join(
+        Competition, StudentCompetition.competition_id == Competition.competition_id
+    ).join(
+        Person, StudentCompetition.student_id == Person.person_id
+    ).outerjoin(
+        ProjectPerson, (ProjectPerson.person_id == StudentCompetition.student_id) &
+                      (ProjectPerson.project_id.in_(project_ids))
+    ).filter(
+        StudentCompetition.student_id.in_(student_ids)
+    ).order_by(StudentCompetition.created_at.desc()).all()
+    
+    # Structure the data
+    competitions = []
+    total_prize_money = 0
+    
+    for sc, comp, student, pp in student_comps:
+        # Get the project this student is on (for context)
+        student_project = None
+        for temp_pp, temp_person in students:
+            if temp_pp.person_id == sc.student_id:
+                student_project = ResearchProject.query.get(temp_pp.project_id)
+                break
+        
+        comp_data = {
+            'student_competition': sc,
+            'competition': comp,
+            'student': student,
+            'project': student_project
+        }
+        competitions.append(comp_data)
+        total_prize_money += sc.prize_money or 0
+    
+    return render_template('faculty/student_competitions.html',
+                         student_competitions=competitions,
+                         total_prize_money=total_prize_money)
