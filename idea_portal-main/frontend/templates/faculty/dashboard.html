@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+```
+<!-- 🔹 Top Summary Cards -->
+<div class="row text-center mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white p-3 shadow-sm">
+            <h6>Ideas Pending</h6>
+            <h2>5</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white p-3 shadow-sm">
+            <h6>Ideas Approved</h6>
+            <h2>10</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white p-3 shadow-sm">
+            <h6>Ideas Rejected</h6>
+            <h2>3</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark p-3 shadow-sm">
+            <h6>Ideas Mentored</h6>
+            <h2>7</h2>
+        </div>
+    </div>
+</div>
+
+<!-- 🔹 Idea Review Overview -->
+<h4 class="mb-3">Idea Review Overview</h4>
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-3">
+            <h6>Idea Status Distribution</h6>
+            <canvas id="ideaChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm p-3">
+            <h6>Ideas by Category</h6>
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- 🔹 Recent Idea Submissions -->
+<h4 class="mb-3">Recent Idea Submissions</h4>
+<div class="card shadow-sm p-3 mb-4">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Idea</th>
+                <th>Student</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>AI Chatbot</td>
+                <td>John</td>
+                <td><span class="badge bg-warning">Pending</span></td>
+                <td>
+                    <button class="btn btn-success btn-sm">Approve</button>
+                    <button class="btn btn-danger btn-sm">Reject</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 🔹 Mentored Ideas -->
+<h4 class="mb-3">Ideas You Are Mentoring</h4>
+<div class="card shadow-sm p-3 mb-4">
+    <p class="text-muted">No ideas assigned yet.</p>
+</div>
+
+<!-- 🔹 Research & Publications -->
+<h4 class="mt-4 mb-3">Research & Publications</h4>
+
+<div class="row text-center mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm p-3">
+            <h6>Total Papers</h6>
+            <h2 class="text-primary">12</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm p-3">
+            <h6>With Students</h6>
+            <h2 class="text-success">8</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm p-3">
+            <h6>Faculty Only</h6>
+            <h2 class="text-warning">4</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm p-3">
+            <h6>Publication Type</h6>
+            <canvas id="publicationChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm p-3">
+            <h6>Papers Over Years</h6>
+            <canvas id="yearChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm p-3">
+    <h6>Recent Publications</h6>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Authors</th>
+                <th>Type</th>
+                <th>Year</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>AI in Education</td>
+                <td>Dr. Sharma, Student A</td>
+                <td><span class="badge bg-success">Faculty + Student</span></td>
+                <td>2026</td>
+            </tr>
+            <tr>
+                <td>Blockchain Security</td>
+                <td>Dr. Mehta</td>
+                <td><span class="badge bg-warning text-dark">Faculty Only</span></td>
+                <td>2025</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+```
+
+</div>
+
+<!-- 🔹 Charts -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("ideaChart"), {
+    type: "pie",
+    data: {
+        labels: ["Pending", "Approved", "Rejected"],
+        datasets: [{
+            data: [5, 10, 3],
+            backgroundColor: ["#ffc107", "#28a745", "#dc3545"]
+        }]
+    }
+});
+
+new Chart(document.getElementById("categoryChart"), {
+    type: "bar",
+    data: {
+        labels: ["Tech", "Social", "Business"],
+        datasets: [{
+            label: "Ideas",
+            data: [8, 5, 3]
+        }]
+    }
+});
+
+new Chart(document.getElementById("publicationChart"), {
+    type: "pie",
+    data: {
+        labels: ["Faculty + Student", "Faculty Only"],
+        datasets: [{
+            data: [8, 4],
+            backgroundColor: ["#28a745", "#ffc107"]
+        }]
+    }
+});
+
+new Chart(document.getElementById("yearChart"), {
+    type: "bar",
+    data: {
+        labels: ["2022", "2023", "2024", "2025", "2026"],
+        datasets: [{
+            label: "Papers",
+            data: [2, 3, 5, 7, 12]
+        }]
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h3>Add Competition Details</h3>
+        <p class="text-muted">Project: {{ project.project_title }}</p>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="POST" class="needs-validation">
+            <div class="mb-3">
+                <label for="competition_name" class="form-label">Competition Name *</label>
+                <input type="text" class="form-control" id="competition_name" name="competition_name" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="venue" class="form-label">Venue *</label>
+                <input type="text" class="form-control" id="venue" name="venue" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="organized_by" class="form-label">Organized By</label>
+                <input type="text" class="form-control" id="organized_by" name="organized_by" 
+                       placeholder="e.g., National/International">
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Add Competition</button>
+                <a href="/faculty/project/{{ project.project_id }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

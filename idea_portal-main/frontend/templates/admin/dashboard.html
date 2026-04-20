@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <!-- 🔹 Top Cards -->
+    <div class="row">
+
+        <!-- Total Ideas -->
+        <div class="col-md-3">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body text-center">
+                    <h5>Total Ideas</h5>
+                    <h2>{{ total_projects or 0 }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved Ideas -->
+        <div class="col-md-3">
+            <div class="card text-white bg-success shadow">
+                <div class="card-body text-center">
+                    <h5>Approved Ideas</h5>
+                    <h2>{{ approved_projects or 0 }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending Ideas -->
+        <div class="col-md-3">
+            <div class="card text-dark bg-warning shadow">
+                <div class="card-body text-center">
+                    <h5>Pending Ideas</h5>
+                    <h2>
+                        <a href="/admin/projects/pending-approval" style="text-decoration:none; color:black;">
+                            {{ pending_projects or 0 }}
+                        </a>
+                    </h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Users -->
+        <div class="col-md-3">
+            <div class="card text-white bg-dark shadow">
+                <div class="card-body text-center">
+                    <h5>Total Users</h5>
+                    <h2>{{ total_users or 0 }}</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 🔹 Platform Overview -->
+    <h4 class="mt-4 mb-3">Platform Overview</h4>
+    <div class="row mb-4">
+
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>Idea Status Distribution</h6>
+                <canvas id="adminIdeaChart"></canvas>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm p-3">
+                <h6>User Roles</h6>
+                <canvas id="userChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 🔹 User Management -->
+    <h4 class="mb-3">User Management</h4>
+    <div class="card shadow-sm p-3 mb-4">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>John Doe</td>
+                    <td>Student</td>
+                    <td>john@email.com</td>
+                    <td><span class="badge bg-success">Active</span></td>
+                </tr>
+                <tr>
+                    <td>Dr. Sharma</td>
+                    <td>Faculty</td>
+                    <td>sharma@email.com</td>
+                    <td><span class="badge bg-success">Active</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 🔹 Idea Management -->
+    <h4 class="mb-3">All Ideas</h4>
+    <div class="card shadow-sm p-3">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Idea</th>
+                    <th>Student</th>
+                    <th>Status</th>
+                    <th>Faculty</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>AI Chatbot</td>
+                    <td>John</td>
+                    <td><span class="badge bg-warning">Pending</span></td>
+                    <td>Dr. Sharma</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<!-- 🔹 Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+new Chart(document.getElementById("adminIdeaChart"), {
+    type: "pie",
+    data: {
+        labels: ["Approved", "Pending", "Rejected"],
+        datasets: [{
+            data: [18, 12, 10],
+            backgroundColor: ["#28a745", "#ffc107", "#dc3545"]
+        }]
+    }
+});
+
+new Chart(document.getElementById("userChart"), {
+    type: "doughnut",
+    data: {
+        labels: ["Students", "Faculty"],
+        datasets: [{
+            data: [20, 5],
+            backgroundColor: ["#007bff", "#6f42c1"]
+        }]
+    }
+});
+</script>
+
+{% endblock %}
