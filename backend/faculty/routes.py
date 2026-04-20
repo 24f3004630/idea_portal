@@ -809,109 +809,65 @@ def analytics_team():
 @login_required
 @role_required('Faculty')
 def view_all_competitions():
-    """View all competitions for all faculty projects"""
+    """View all competitions - both faculty-led and student competitions they mentored"""
     faculty_id = session['user_id']
     
     # Get all projects for this faculty
     projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
     project_ids = [p.project_id for p in projects]
     
-    if not project_ids:
-        return render_template('faculty/competitions.html',
-                             project=None,
-                             competitions=[],
-                             all_faculty_competitions=True)
+    competitions_data = []
     
-    # Get all competitions for these projects
-    project_competitions = db.session.query(
-        ProjectCompetition, Competition, ResearchProject
+    # 1. Get all competitions for faculty's projects (faculty-led)
+    if project_ids:
+        project_competitions = db.session.query(
+            ProjectCompetition, Competition, ResearchProject
+        ).join(
+            Competition, ProjectCompetition.competition_id == Competition.competition_id
+        ).join(
+            ResearchProject, ProjectCompetition.project_id == ResearchProject.project_id
+        ).filter(
+            ProjectCompetition.project_id.in_(project_ids)
+        ).all()
+        
+        for pc, comp, proj in project_competitions:
+            competitions_data.append({
+                'type': 'project',
+                'project_competition': pc,
+                'competition': comp,
+                'project': proj,
+                'student': None,
+                'mentor': None
+            })
+    
+    # 2. Get all student competitions where this faculty is the mentor
+    student_comps = db.session.query(
+        StudentCompetition, Competition, Person, Person
     ).join(
-        Competition, ProjectCompetition.competition_id == Competition.competition_id
+        Competition, StudentCompetition.competition_id == Competition.competition_id
     ).join(
-        ResearchProject, ProjectCompetition.project_id == ResearchProject.project_id
+        Person, StudentCompetition.student_id == Person.person_id,
+        isouter=True
+    ).join(
+        Person, StudentCompetition.mentor_id == Person.person_id,
+        isouter=True
     ).filter(
-        ProjectCompetition.project_id.in_(project_ids)
-    ).all()
+        StudentCompetition.mentor_id == faculty_id
+    ).order_by(StudentCompetition.created_at.desc()).all()
     
-    competitions = []
-    for pc, comp, proj in project_competitions:
-        competitions.append({
-            'project_competition': pc,
+    for sc, comp, student, mentor in student_comps:
+        competitions_data.append({
+            'type': 'student',
+            'student_competition': sc,
             'competition': comp,
-            'project': proj
+            'project': None,
+            'student': student,
+            'mentor': mentor
         })
     
     return render_template('faculty/competitions.html',
                          project=None,
-                         competitions=competitions,
-                         all_faculty_competitions=True)
+                         competitions=competitions_data,
+                         all_faculty_competitions=True,
+                         show_both_types=True)
 
-
-# ==================== STUDENT COMPETITIONS ====================
-@faculty_bp.route('/student-competitions')
-@login_required
-@role_required('Faculty')
-def view_student_competitions():
-    """View competitions that students mentored by this faculty participated in"""
-    faculty_id = session['user_id']
-    
-    # Get all projects for this faculty
-    projects = ResearchProject.query.filter_by(faculty_id=faculty_id).all()
-    project_ids = [p.project_id for p in projects]
-    
-    if not project_ids:
-        return render_template('faculty/student_competitions.html', 
-                             student_competitions=[],
-                             total_prize_money=0)
-    
-    # Get all students on this faculty's projects
-    students = db.session.query(ProjectPerson, Person).filter(
-        ProjectPerson.project_id.in_(project_ids),
-        ProjectPerson.person_id == Person.person_id
-    ).all()
-    
-    student_ids = [pp.person_id for pp, _ in students]
-    
-    if not student_ids:
-        return render_template('faculty/student_competitions.html', 
-                             student_competitions=[],
-                             total_prize_money=0)
-    
-    # Get all competitions for these students
-    student_comps = db.session.query(
-        StudentCompetition, Competition, Person, ProjectPerson
-    ).join(
-        Competition, StudentCompetition.competition_id == Competition.competition_id
-    ).join(
-        Person, StudentCompetition.student_id == Person.person_id
-    ).outerjoin(
-        ProjectPerson, (ProjectPerson.person_id == StudentCompetition.student_id) &
-                      (ProjectPerson.project_id.in_(project_ids))
-    ).filter(
-        StudentCompetition.student_id.in_(student_ids)
-    ).order_by(StudentCompetition.created_at.desc()).all()
-    
-    # Structure the data
-    competitions = []
-    total_prize_money = 0
-    
-    for sc, comp, student, pp in student_comps:
-        # Get the project this student is on (for context)
-        student_project = None
-        for temp_pp, temp_person in students:
-            if temp_pp.person_id == sc.student_id:
-                student_project = ResearchProject.query.get(temp_pp.project_id)
-                break
-        
-        comp_data = {
-            'student_competition': sc,
-            'competition': comp,
-            'student': student,
-            'project': student_project
-        }
-        competitions.append(comp_data)
-        total_prize_money += sc.prize_money or 0
-    
-    return render_template('faculty/student_competitions.html',
-                         student_competitions=competitions,
-                         total_prize_money=total_prize_money)

@@ -91,6 +91,20 @@
                             <small class="form-text text-muted">Amount in Indian Rupees (leave blank if no prize)</small>
                         </div>
 
+                        <!-- Faculty Mentor -->
+                        <div class="mb-3">
+                            <label for="mentor_id" class="form-label">
+                                <i class="fas fa-user-tie"></i> Faculty Mentor (Optional)
+                            </label>
+                            <select class="form-select" id="mentor_id" name="mentor_id">
+                                <option value="">-- Select Faculty Mentor --</option>
+                                {% for mentor in mentors %}
+                                <option value="{{ mentor.person_id }}">{{ mentor.name }} ({{ mentor.department }})</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">Select the faculty who mentored you for this competition</small>
+                        </div>
+
                         <!-- Form Actions -->
                         <div class="d-flex gap-2 mt-4">
                             <button type="submit" class="btn btn-primary">

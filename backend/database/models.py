@@ -247,6 +247,7 @@ class StudentCompetition(db.Model):
     student_competition_id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('person.person_id'))
     competition_id = db.Column(db.Integer, db.ForeignKey('competition.competition_id'))
+    mentor_id = db.Column(db.Integer, db.ForeignKey('person.person_id'), nullable=True)  # Faculty mentor
 
     team_name = db.Column(db.String(100))  # Team name or individual name
     prize_money = db.Column(db.Float, default=0)  # Prize won (if any)

@@ -541,9 +541,11 @@ def add_competition():
             db.session.flush()  # Get the competition_id without committing
             
             # Create student-competition link
+            mentor_id = request.form.get('mentor_id')
             student_competition = StudentCompetition(
                 student_id=student_id,
                 competition_id=competition.competition_id,
+                mentor_id=int(mentor_id) if mentor_id else None,
                 team_name=request.form.get('team_name'),
                 prize_money=float(request.form.get('prize_money', 0) or 0)
             )
@@ -556,7 +558,10 @@ def add_competition():
             db.session.rollback()
             return f"Error adding competition: {str(e)}", 400
     
-    return render_template('student/add_competition.html')
+    # GET request - load list of faculty mentors
+    mentors = Person.query.filter_by(type='Faculty', is_approved=True).all()
+    
+    return render_template('student/add_competition.html', mentors=mentors)
 
 
 # ==================== DELETE COMPETITION (Student) ====================
