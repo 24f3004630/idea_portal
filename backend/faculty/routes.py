@@ -324,6 +324,7 @@ def add_publication(project_id):
             title = request.form.get('title')
             doi = request.form.get('doi')
 
+            # Check duplicates
             query = Publication.query.filter(Publication.project_id == project_id)
             if doi:
                 query = query.filter((Publication.title == title) | (Publication.doi == doi))
@@ -334,6 +335,11 @@ def add_publication(project_id):
             if existing_publication:
                 return "Duplicate publication entry detected for this project", 400
 
+            # FIX: handle date BEFORE creating object
+            date_str = request.form.get('publication_date')
+            publication_date = datetime.strptime(date_str, "%Y-%m").date() if date_str else None
+
+            # Correct object creation
             publication = Publication(
                 project_id=project_id,
                 title=title,
@@ -341,7 +347,7 @@ def add_publication(project_id):
                 venue=request.form.get('venue'),
                 status=request.form.get('status', 'Submitted'),
                 indexing=request.form.get('indexing'),
-                year_of_publication=int(request.form.get('year_of_publication', datetime.now().year)),
+                publication_date=publication_date,
                 volume=request.form.get('volume'),
                 page_number=request.form.get('page_number'),
                 doi=doi,
@@ -353,6 +359,7 @@ def add_publication(project_id):
             db.session.commit()
             
             return redirect(f'/faculty/project/{project_id}')
+        
         except Exception as e:
             return f"Error adding publication: {str(e)}"
     
@@ -423,6 +430,38 @@ def add_ipr(project_id):
     return render_template('faculty/add_ipr.html', project=project, publications=publications)
 
 
+# ==================== EDIT IPR / PATENT ====================
+@faculty_bp.route('/project/<int:project_id>/ipr/<int:ipr_id>/edit', methods=['GET', 'POST'])
+@login_required
+@role_required('Faculty')
+def edit_ipr(project_id, ipr_id):
+    """Edit an existing IPR/Patent"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or project.faculty_id != session['user_id']:
+        return "Unauthorized or Project not found", 404
+    
+    ipr = IPR.query.get(ipr_id)
+    if not ipr or ipr.project_id != project_id:
+        return "IPR not found", 404
+    
+    if request.method == 'POST':
+        try:
+            ipr.innovation_title = request.form.get('innovation_title')
+            ipr.ipr_type = request.form.get('ipr_type')
+            ipr.application_number = request.form.get('application_number')
+            ipr.grant_status = request.form.get('grant_status')
+            ipr.ownership_type = request.form.get('ownership_type')
+            
+            db.session.commit()
+            
+            return redirect(f'/faculty/project/{project_id}')
+        except Exception as e:
+            return f"Error updating IPR: {str(e)}"
+    
+    return render_template('faculty/edit_ipr.html', project=project, ipr=ipr)
+
+
 # ==================== ADD FUNDING DETAILS ====================
 @faculty_bp.route('/project/<int:project_id>/funding/add', methods=['GET', 'POST'])
 @login_required
@@ -470,6 +509,50 @@ def add_funding(project_id):
             return f"Error adding funding: {str(e)}"
     
     return render_template('faculty/add_funding.html', project=project)
+
+
+# ==================== EDIT FUNDING DETAILS ====================
+@faculty_bp.route('/project/<int:project_id>/funding/<int:fund_id>/edit', methods=['GET', 'POST'])
+@login_required
+@role_required('Faculty')
+def edit_funding(project_id, fund_id):
+    """Edit funding details for a project"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or project.faculty_id != session['user_id']:
+        return "Unauthorized or Project not found", 404
+    
+    # Get the funding entry
+    project_funding = ProjectFunding.query.filter_by(
+        project_id=project_id,
+        fund_id=fund_id
+    ).first()
+    
+    if not project_funding:
+        return "Funding not found", 404
+    
+    funder = Funder.query.get(fund_id)
+    
+    if request.method == 'POST':
+        try:
+            # Update funder details
+            funder.funding_agency = request.form.get('funding_agency')
+            funder.funding_type = request.form.get('funding_type')
+            
+            # Update project funding details
+            project_funding.sanctioned_amount = float(request.form.get('sanctioned_amount', 0))
+            project_funding.sanctioned_date = datetime.strptime(
+                request.form.get('sanctioned_date'),
+                '%Y-%m-%d'
+            ) if request.form.get('sanctioned_date') else None
+            
+            db.session.commit()
+            
+            return redirect(f'/faculty/project/{project_id}')
+        except Exception as e:
+            return f"Error updating funding: {str(e)}"
+    
+    return render_template('faculty/edit_funding.html', project=project, funder=funder, project_funding=project_funding)
 
 
 # ==================== COMPETITIONS LIST ====================
@@ -768,8 +851,6 @@ def analytics_iprs():
         'statuses': list(status_count.keys()),
         'counts': list(status_count.values())
     })
-
-
 @faculty_bp.route('/api/analytics/team')
 @login_required
 @role_required('Faculty')
@@ -788,12 +869,15 @@ def analytics_team():
     
     team_data = db.session.query(
         ResearchProject.project_id,
-        ResearchProject.title,
+        ResearchProject.project_title,
         db.func.count(ProjectPerson.person_id)
     ).filter(
         ResearchProject.project_id.in_(project_ids),
         ProjectPerson.project_id == ResearchProject.project_id
-    ).group_by(ResearchProject.project_id).all()
+    ).group_by(
+        ResearchProject.project_id,
+        ResearchProject.project_title   # IMPORTANT FIX
+    ).all()
     
     project_titles = [item[1] for item in team_data]
     team_sizes = [item[2] for item in team_data]
@@ -802,6 +886,7 @@ def analytics_team():
         'projects': project_titles,
         'team_sizes': team_sizes
     })
+
 
 
 # ==================== VIEW ALL COMPETITIONS (Faculty) ====================
@@ -871,3 +956,45 @@ def view_all_competitions():
                          all_faculty_competitions=True,
                          show_both_types=True)
 
+# ==================== EDIT PUBLICATION ====================
+@faculty_bp.route('/publication/<int:pub_id>/edit', methods=['GET', 'POST'])
+@login_required
+@role_required('Faculty')
+def edit_publication(pub_id):
+    """Edit an existing publication"""
+    
+    publication = Publication.query.get(pub_id)
+
+    if not publication:
+        return "Publication not found", 404
+
+    # Check ownership
+    project = ResearchProject.query.get(publication.project_id)
+    if not project or project.faculty_id != session['user_id']:
+        return "Unauthorized", 403
+
+    if request.method == 'POST':
+        try:
+            publication.title = request.form.get('title')
+            publication.publication_type = request.form.get('publication_type')
+            publication.venue = request.form.get('venue')
+            publication.status = request.form.get('status')
+            publication.indexing = request.form.get('indexing')
+
+            # FIXED DATE HANDLING
+            date_str = request.form.get('publication_date')
+            publication.publication_date = datetime.strptime(date_str, "%Y-%m").date() if date_str else None
+
+            publication.volume = request.form.get('volume')
+            publication.page_number = request.form.get('page_number')
+            publication.doi = request.form.get('doi')
+            publication.issn_isbn = request.form.get('issn_isbn')
+            publication.publisher = request.form.get('publisher')
+
+            db.session.commit()
+
+            return redirect(f'/faculty/project/{publication.project_id}')
+        except Exception as e:
+            return f"Error updating publication: {str(e)}"
+
+    return render_template('faculty/edit_publication.html', pub=publication)

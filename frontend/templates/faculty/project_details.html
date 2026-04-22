@@ -78,7 +78,8 @@
         <div class="card mb-3">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Team Members ({{ students|length }})</h5>
-                <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">+ Add Student</button>
+               <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">+ Add Team Member</button>
+
             </div>
             <div class="card-body">
                 {% if team_members %}
@@ -137,16 +138,30 @@
             <div class="card-body">
                 {% if publications %}
                 <div class="list-group">
-                    {% for pub in publications %}
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ pub.title }}</h6>
-                            <small class="badge bg-primary">{{ pub.publication_type }}</small>
-                        </div>
-                        <p class="mb-1 small">{{ pub.venue }} ({{ pub.year_of_publication }})</p>
-                        <p class="mb-0 small text-muted">Status: {{ pub.status }}</p>
-                    </div>
-                    {% endfor %}
+                  {% for pub in publications %}
+<div class="list-group-item">
+    <div class="d-flex w-100 justify-content-between align-items-center">
+        
+        <div>
+            <h6 class="mb-1">{{ pub.title }}</h6>
+            <small class="badge bg-primary">{{ pub.publication_type }}</small>
+        </div>
+
+        <!-- ✅ Edit button aligned right -->
+        <a href="/faculty/publication/{{ pub.publication_id }}/edit" 
+           class="btn btn-warning btn-sm">Edit</a>
+    </div>
+
+    <p class="mb-1 small">
+        {{ pub.venue }} ({{ pub.year_of_publication }})
+    </p>
+    <p class="mb-0 small text-muted">
+        Status: {{ pub.status }}
+    </p>
+</div>
+{% endfor %}
+
+                 
                 </div>
                 {% else %}
                 <p class="text-muted">No publications yet</p>
@@ -170,6 +185,7 @@
                                 <th>Type</th>
                                 <th>Sanctioned Amount</th>
                                 <th>Date</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -179,6 +195,9 @@
                                 <td>{{ funder.funding_type }}</td>
                                 <td>₹{{ funding.sanctioned_amount|default('0') }}</td>
                                 <td>{{ funding.sanctioned_date|default('N/A') }}</td>
+                                <td>
+                                    <a href="/faculty/project/{{ project.project_id }}/funding/{{ funder.fund_id }}/edit" class="btn btn-warning btn-sm">Edit</a>
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -201,11 +220,16 @@
                 <div class="list-group">
                     {% for ipr in iprs %}
                     <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">{{ ipr.innovation_title }}</h6>
-                            <small class="badge bg-danger">{{ ipr.ipr_type }}</small>
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">{{ ipr.innovation_title }}</h6>
+                                <p class="mb-1 small">App #: {{ ipr.application_number }} | Status: {{ ipr.grant_status }}</p>
+                            </div>
+                            <div>
+                                <small class="badge bg-danger me-2">{{ ipr.ipr_type }}</small>
+                                <a href="/faculty/project/{{ project.project_id }}/ipr/{{ ipr.ipr_id }}/edit" class="btn btn-warning btn-sm">Edit</a>
+                            </div>
                         </div>
-                        <p class="mb-1 small">App #: {{ ipr.application_number }} | Status: {{ ipr.grant_status }}</p>
                     </div>
                     {% endfor %}
                 </div>

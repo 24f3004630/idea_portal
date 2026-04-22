@@ -1,5 +1,5 @@
 from flask import Flask, render_template, session
-from config import Config
+from backend.config import Config
 from database.db import db
 
 # CREATE APP FIRST
@@ -15,10 +15,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 db.init_app(app)
 
 # IMPORT BLUEPRINTS AFTER APP
-from auth.routes import auth_bp
-from admin.routes import admin_bp
-from faculty.routes import faculty_bp
-from student.routes import student_bp
+from backend.auth.routes import auth_bp
+from backend.admin.routes import admin_bp
+from backend.faculty.routes import faculty_bp
+from backend.student.routes import student_bp
 
 # REGISTER BLUEPRINTS
 app.register_blueprint(auth_bp)

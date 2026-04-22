@@ -12,6 +12,7 @@
 <div class="row">
     <div class="col-md-8">
         <form method="POST" class="needs-validation">
+            
             <div class="mb-3">
                 <label for="title" class="form-label">Publication Title *</label>
                 <input type="text" class="form-control" id="title" name="title" required>
@@ -30,15 +31,16 @@
                         </select>
                     </div>
                 </div>
+
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label for="status" class="form-label">Status *</label>
-                        <select class="form-select" id="status" name="status" required>
-                            <option value="Submitted">Submitted</option>
-                            <option value="Accepted">Accepted</option>
-                            <option value="Published">Published</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
+                        
+                        <!-- visible but not editable -->
+                        <input type="text" class="form-control bg-light" value="Published" readonly>
+                        
+                        <!-- actual value sent to backend -->
+                        <input type="hidden" name="status" value="Published">
                     </div>
                 </div>
             </div>
@@ -51,8 +53,9 @@
             <div class="row">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="year_of_publication" class="form-label">Year of Publication</label>
-                        <input type="number" class="form-control" id="year_of_publication" name="year_of_publication" min="2000">
+                       <label for="publication_date" class="form-label">Publication Month & Year</label>
+<input type="month" class="form-control" id="publication_date" name="publication_date">
+
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -72,8 +75,14 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label for="indexing" class="form-label">Indexing</label>
-                        <input type="text" class="form-control" id="indexing" name="indexing" placeholder="e.g., SCI, Scopus">
+                       <label for="indexing" class="form-label">Indexing</label>
+<select class="form-select" id="indexing" name="indexing">
+    <option value="">-- Select Indexing --</option>
+    <option value="SCI">SCI</option>
+    <option value="Scopus">Scopus</option>
+    <option value="Other">Other</option>
+</select>
+
                     </div>
                 </div>
             </div>
@@ -102,6 +111,7 @@
                 <button type="submit" class="btn btn-primary">Add Publication</button>
                 <a href="/faculty/project/{{ project.project_id }}" class="btn btn-secondary">Cancel</a>
             </div>
+
         </form>
     </div>
 </div>
