@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, session, jsonify
+from sqlalchemy.orm import aliased
 from database.db import db
 from database.models import (
     Person, ResearchProject, ProjectPerson, Publication, IPR, Startup, 
@@ -926,15 +927,18 @@ def view_all_competitions():
             })
     
     # 2. Get all student competitions where this faculty is the mentor
+    Student = aliased(Person)
+    Mentor = aliased(Person)
+
     student_comps = db.session.query(
-        StudentCompetition, Competition, Person, Person
+        StudentCompetition, Competition, Student, Mentor
     ).join(
         Competition, StudentCompetition.competition_id == Competition.competition_id
     ).join(
-        Person, StudentCompetition.student_id == Person.person_id,
+        Student, StudentCompetition.student_id == Student.person_id,
         isouter=True
     ).join(
-        Person, StudentCompetition.mentor_id == Person.person_id,
+        Mentor, StudentCompetition.mentor_id == Mentor.person_id,
         isouter=True
     ).filter(
         StudentCompetition.mentor_id == faculty_id
