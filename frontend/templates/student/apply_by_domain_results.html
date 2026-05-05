@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h3>Projects in Selected Domains</h3>
+        <p class="text-muted">
+            Projects in: 
+            {% for domain in selected_domains %}
+                <span class="badge bg-primary">{{ domain }}</span>
+            {% endfor %}
+        </p>
+        <hr>
+    </div>
+</div>
+
+{% if projects %}
+<div class="alert alert-success">
+    <h5>Found {{ projects|length }} project{{ 's' if projects|length != 1 else '' }} you can apply to!</h5>
+    <p>Click "Quick Apply" to apply with your basic information, or "View Details" for more information.</p>
+</div>
+
+<div class="row">
+    {% for project in projects %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">{{ project.project_title }}</h5>
+                <p class="card-text text-muted">{{ project.project_description[:150] }}...</p>
+                
+                <div class="mb-3">
+                    <span class="badge bg-primary">{{ project.domain }}</span>
+                    <span class="badge bg-success">{{ project.project_status }}</span>
+                </div>
+
+                <div class="mb-3">
+                    <p class="small mb-1"><strong>Faculty:</strong> {{ project_faculty[project.project_id].name }}</p>
+                    <p class="small mb-1"><strong>Team Size:</strong> {{ project.team_size }}</p>
+                    <p class="small mb-0"><strong>Required Skills:</strong> {{ project.required_skills or 'N/A' }}</p>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="row">
+                    <div class="col-6">
+                        <form method="POST" action="/student/quick-apply/{{ project.project_id }}" style="display:inline;">
+                            <button type="submit" class="btn btn-success btn-sm w-100" 
+                                    onclick="return confirm('Apply to this project with your basic information?')">
+                                <i class="fas fa-rocket"></i> Quick Apply
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <a href="/student/project/{{ project.project_id }}" class="btn btn-primary btn-sm w-100">
+                            <i class="fas fa-eye"></i> View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-warning">
+    <h5>No projects found in the selected domains</h5>
+    <p>No approved, ongoing projects are currently available in the domains you selected. Try selecting different domains or check back later.</p>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="/student/apply-by-domain" class="btn btn-outline-primary">Change Domains</a>
+        <a href="/student/applications" class="btn btn-outline-success ms-2">View My Applications</a>
+        <a href="/student/dashboard" class="btn btn-outline-secondary ms-2">Back to Dashboard</a>
+    </div>
+</div>
+
+{% endblock %}

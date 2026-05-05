@@ -269,5 +269,12 @@ class ProjectApplication(db.Model):
     student_message = db.Column(db.Text)  # Optional message from student
     faculty_message = db.Column(db.Text)  # Optional feedback from faculty
     
+    # Additional application options
+    preferred_domain = db.Column(db.String(100))  # Student's preferred domain of work
+    skills_offered = db.Column(db.Text)  # Skills the student can contribute
+    commitment_level = db.Column(db.String(50))  # Full-time / Part-time / Flexible
+    availability_hours = db.Column(db.Integer)  # Hours per week available
+    experience_level = db.Column(db.String(50))  # Beginner / Intermediate / Advanced
+    
     def __repr__(self):
         return f'<ProjectApplication {self.application_id}>'

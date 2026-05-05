@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h3>Apply by Domain</h3>
+        <p class="text-muted">Select domains you're interested in and apply to relevant projects</p>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="POST">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Select Your Interested Domains</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Choose one or more domains that match your skills and interests:</p>
+                    
+                    <div class="row">
+                        {% for domain in domains %}
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                       value="{{ domain }}" id="domain_{{ loop.index }}" name="domains">
+                                <label class="form-check-label" for="domain_{{ loop.index }}">
+                                    {{ domain }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="fas fa-search"></i> Find Projects & Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">How It Works</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Select domains you're interested in</li>
+                    <li class="mb-2">View available projects in those domains</li>
+                    <li class="mb-2">Quick apply to multiple projects at once</li>
+                    <li>Track your applications in one place</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Benefits</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li class="mb-1">Find projects matching your interests</li>
+                    <li class="mb-1">Apply with pre-filled information</li>
+                    <li class="mb-1">Save time with quick applications</li>
+                    <li>Increase your chances of getting accepted</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <a href="/student/dashboard" class="btn btn-outline-secondary">Back to Dashboard</a>
+        <a href="/student/projects" class="btn btn-outline-primary ms-2">Browse All Projects</a>
+    </div>
+</div>
+
+{% endblock %}

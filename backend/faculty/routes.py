@@ -768,6 +768,90 @@ def get_available_students(project_id):
     } for s in available_students])
 
 
+# ==================== VIEW PROJECT APPLICATIONS ====================
+@faculty_bp.route('/applications')
+@login_required
+@role_required('Faculty')
+def view_applications():
+    """View all applications for faculty's projects"""
+    faculty_id = session['user_id']
+    
+    # Get all applications for faculty's projects
+    applications = db.session.query(ProjectApplication, ResearchProject, Person).filter(
+        ResearchProject.faculty_id == faculty_id,
+        ProjectApplication.project_id == ResearchProject.project_id,
+        ProjectApplication.student_id == Person.person_id
+    ).order_by(ProjectApplication.application_date.desc()).all()
+    
+    return render_template('faculty/applications.html',
+                         applications=applications)
+
+
+# ==================== APPROVE/REJECT APPLICATION ====================
+@faculty_bp.route('/application/<int:application_id>/<action>', methods=['POST'])
+@login_required
+@role_required('Faculty')
+def handle_application(application_id, action):
+    """Approve or reject a project application"""
+    faculty_id = session['user_id']
+    
+    application = ProjectApplication.query.filter_by(application_id=application_id).first()
+    
+    if not application:
+        return "Application not found", 404
+    
+    # Verify faculty owns the project
+    project = ResearchProject.query.filter_by(
+        project_id=application.project_id,
+        faculty_id=faculty_id
+    ).first()
+    
+    if not project:
+        return "Unauthorized", 403
+    
+    if action not in ['approve', 'reject']:
+        return "Invalid action", 400
+    
+    if application.status != 'Pending':
+        return "Application already processed", 400
+    
+    try:
+        if action == 'approve':
+            # Check if project can accept more students
+            if not project.can_accept_students():
+                return "Project cannot accept more students", 400
+            
+            # Add student to project
+            project_person = ProjectPerson(
+                project_id=application.project_id,
+                person_id=application.student_id,
+                role='Team Member'
+            )
+            db.session.add(project_person)
+            application.status = 'Approved'
+            
+            # Send approval email
+            try:
+                from tasks.mail_tasks import send_project_approved_email
+                send_project_approved_email.delay(application.application_id)
+            except Exception as mail_exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Could not queue approval email: {mail_exc}"
+                )
+                
+        elif action == 'reject':
+            application.status = 'Rejected'
+            application.faculty_message = request.form.get('faculty_message', '')
+        
+        db.session.commit()
+        return redirect('/faculty/applications')
+        
+    except Exception as e:
+        db.session.rollback()
+        return f"Error processing application: {str(e)}"
+
+
 # ==================== ANALYTICS APIs ====================
 @faculty_bp.route('/api/analytics/projects')
 @login_required

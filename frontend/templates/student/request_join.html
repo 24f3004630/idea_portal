@@ -14,9 +14,64 @@
         <form method="POST">
             <div class="card">
                 <div class="card-body">
+                    <h5 class="mb-4">Application Details</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="preferred_domain" class="form-label">Preferred Domain of Work</label>
+                            <select class="form-select" id="preferred_domain" name="preferred_domain">
+                                <option value="">Select Domain</option>
+                                <option value="Machine Learning">Machine Learning</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Mobile Development">Mobile Development</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Cybersecurity">Cybersecurity</option>
+                                <option value="IoT">IoT</option>
+                                <option value="Blockchain">Blockchain</option>
+                                <option value="AI">AI</option>
+                                <option value="Cloud Computing">Cloud Computing</option>
+                                <option value="DevOps">DevOps</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="experience_level" class="form-label">Experience Level</label>
+                            <select class="form-select" id="experience_level" name="experience_level">
+                                <option value="">Select Level</option>
+                                <option value="Beginner">Beginner</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Advanced">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="commitment_level" class="form-label">Commitment Level</label>
+                            <select class="form-select" id="commitment_level" name="commitment_level">
+                                <option value="">Select Commitment</option>
+                                <option value="Full-time">Full-time</option>
+                                <option value="Part-time">Part-time</option>
+                                <option value="Flexible">Flexible</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="availability_hours" class="form-label">Hours per Week Available</label>
+                            <input type="number" class="form-control" id="availability_hours" name="availability_hours" 
+                                   min="1" max="40" placeholder="e.g., 10">
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
-                        <label for="message" class="form-label">Why do you want to join this project? (Optional)</label>
-                        <textarea class="form-control" id="message" name="message" rows="6" 
+                        <label for="skills_offered" class="form-label">Skills You Can Contribute</label>
+                        <textarea class="form-control" id="skills_offered" name="skills_offered" rows="3" 
+                                  placeholder="List your relevant skills (e.g., Python, JavaScript, Data Analysis, etc.)"></textarea>
+                        <small class="text-muted">Comma-separated skills that match the project requirements</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Why do you want to join this project?</label>
+                        <textarea class="form-control" id="message" name="message" rows="4" 
                                   placeholder="Tell the faculty why you're interested in this project, what you can contribute, and what you hope to learn..."></textarea>
                         <small class="text-muted">A compelling message increases your chances of getting accepted</small>
                     </div>

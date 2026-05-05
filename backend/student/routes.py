@@ -242,6 +242,11 @@ def request_join_project(project_id):
                 project_id=project_id,
                 student_id=student_id,
                 student_message=request.form.get('message', ''),
+                preferred_domain=request.form.get('preferred_domain', ''),
+                skills_offered=request.form.get('skills_offered', ''),
+                commitment_level=request.form.get('commitment_level', ''),
+                availability_hours=request.form.get('availability_hours', type=int),
+                experience_level=request.form.get('experience_level', ''),
                 status='Pending'
             )
             
@@ -253,6 +258,152 @@ def request_join_project(project_id):
             return f"Error requesting to join: {str(e)}"
     
     return render_template('student/request_join.html', project=project)
+
+
+# ==================== CANCEL APPLICATION ====================
+@student_bp.route('/application/<int:application_id>/cancel', methods=['POST'])
+@login_required
+@role_required('Student')
+def cancel_application(application_id):
+    """Cancel a pending project application"""
+    student_id = session['user_id']
+    
+    application = ProjectApplication.query.filter_by(
+        application_id=application_id,
+        student_id=student_id,
+        status='Pending'
+    ).first()
+    
+    if not application:
+        return "Application not found or cannot be cancelled", 404
+    
+    try:
+        db.session.delete(application)
+        db.session.commit()
+        return redirect('/student/applications')
+    except Exception as e:
+        return f"Error cancelling application: {str(e)}"
+
+
+# ==================== APPLY BY DOMAIN ====================
+@student_bp.route('/apply-by-domain', methods=['GET', 'POST'])
+@login_required
+@role_required('Student')
+def apply_by_domain():
+    """Allow students to select domains and apply to projects in those domains"""
+    student_id = session['user_id']
+    
+    if request.method == 'POST':
+        selected_domains = request.form.getlist('domains')
+        if not selected_domains:
+            return "Please select at least one domain", 400
+        
+        # Get projects in selected domains that student hasn't applied to
+        projects = ResearchProject.query.filter(
+            ResearchProject.is_approved == True,
+            ResearchProject.project_status == 'Ongoing',
+            ResearchProject.domain.in_(selected_domains)
+        ).all()
+        
+        # Filter out projects where student is already a member or has pending application
+        available_projects = []
+        for project in projects:
+            # Check if already a member
+            is_member = ProjectPerson.query.filter_by(
+                project_id=project.project_id,
+                person_id=student_id
+            ).first()
+            
+            # Check if has pending application
+            has_application = ProjectApplication.query.filter_by(
+                project_id=project.project_id,
+                student_id=student_id,
+                status='Pending'
+            ).first()
+            
+            if not is_member and not has_application and project.can_accept_students():
+                available_projects.append(project)
+        
+        # Get faculty info
+        project_faculty = {}
+        for project in available_projects:
+            faculty = Person.query.get(project.faculty_id)
+            project_faculty[project.project_id] = faculty
+        
+        return render_template('student/apply_by_domain_results.html',
+                             projects=available_projects,
+                             project_faculty=project_faculty,
+                             selected_domains=selected_domains)
+    
+    # GET request - show domain selection
+    # Get unique domains from approved projects
+    domains = db.session.query(
+        ResearchProject.domain.distinct()
+    ).filter(
+        ResearchProject.domain != None,
+        ResearchProject.is_approved == True,
+        ResearchProject.project_status == 'Ongoing'
+    ).all()
+    
+    domain_list = [d[0] for d in domains if d[0]]
+    
+    return render_template('student/apply_by_domain.html', domains=domain_list)
+
+
+# ==================== QUICK APPLY ====================
+@student_bp.route('/quick-apply/<int:project_id>', methods=['POST'])
+@login_required
+@role_required('Student')
+def quick_apply(project_id):
+    """Quick apply to a project with basic information"""
+    project = ResearchProject.query.get(project_id)
+    
+    if not project or not project.is_approved:
+        return "Project not found or not approved", 404
+    
+    if not project.can_accept_students():
+        return "This project is not accepting new members", 400
+    
+    student_id = session['user_id']
+    
+    # Check if already applied or member
+    existing_member = ProjectPerson.query.filter_by(
+        project_id=project_id,
+        person_id=student_id
+    ).first()
+    
+    if existing_member:
+        return "You are already part of this project", 400
+    
+    existing_app = ProjectApplication.query.filter_by(
+        project_id=project_id,
+        student_id=student_id,
+        status='Pending'
+    ).first()
+    
+    if existing_app:
+        return "You have already applied to this project", 400
+    
+    # Get student info for auto-filling
+    student = Person.query.get(student_id)
+    
+    # Create application with basic info
+    application = ProjectApplication(
+        project_id=project_id,
+        student_id=student_id,
+        student_message=f"I am interested in joining this {project.domain} project.",
+        preferred_domain=project.domain,
+        skills_offered=student.skills or '',
+        commitment_level='Flexible',
+        availability_hours=10,  # Default
+        experience_level='Beginner',
+        status='Pending'
+    )
+    
+    db.session.add(application)
+    db.session.commit()
+    
+    return redirect('/student/applications')
 
 
 # ==================== MY PROJECTS ====================
