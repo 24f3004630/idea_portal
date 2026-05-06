@@ -257,7 +257,16 @@ def request_join_project(project_id):
         except Exception as e:
             return f"Error requesting to join: {str(e)}"
     
-    return render_template('student/request_join.html', project=project)
+    domain_rows = db.session.query(
+        ResearchProject.domain.distinct()
+    ).filter(
+        ResearchProject.domain != None,
+        ResearchProject.domain != '',
+        ResearchProject.is_approved == True
+    ).all()
+    domain_choices = [row[0] for row in domain_rows if row[0]]
+
+    return render_template('student/request_join.html', project=project, domain_choices=domain_choices)
 
 
 # ==================== CANCEL APPLICATION ====================

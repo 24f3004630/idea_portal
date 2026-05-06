@@ -21,16 +21,12 @@
                             <label for="preferred_domain" class="form-label">Preferred Domain of Work</label>
                             <select class="form-select" id="preferred_domain" name="preferred_domain">
                                 <option value="">Select Domain</option>
-                                <option value="Machine Learning">Machine Learning</option>
-                                <option value="Web Development">Web Development</option>
-                                <option value="Mobile Development">Mobile Development</option>
-                                <option value="Data Science">Data Science</option>
-                                <option value="Cybersecurity">Cybersecurity</option>
-                                <option value="IoT">IoT</option>
-                                <option value="Blockchain">Blockchain</option>
-                                <option value="AI">AI</option>
-                                <option value="Cloud Computing">Cloud Computing</option>
-                                <option value="DevOps">DevOps</option>
+                                {% for domain in domain_choices %}
+                                <option value="{{ domain }}" {% if domain == project.domain %}selected{% endif %}>{{ domain }}</option>
+                                {% endfor %}
+                                {% if project.domain and project.domain not in domain_choices %}
+                                <option value="{{ project.domain }}" selected>{{ project.domain }}</option>
+                                {% endif %}
                                 <option value="Other">Other</option>
                             </select>
                         </div>
