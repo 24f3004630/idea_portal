@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, session, jsonify
-from database.db import db
-from database.models import (
+from backend.database.db import db
+from backend.database.models import (
     Person, ResearchProject, ProjectPerson, ProjectApplication, Publication, IPR, Startup,
     Competition, StudentCompetition
 )
@@ -11,13 +11,69 @@ student_bp = Blueprint('student', __name__, url_prefix='/student')
 
 
 # ==================== DASHBOARD ====================
-@student_bp.route('/dashboard')
+@student_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 @role_required('Student')
 def dashboard():
     """Student dashboard showing overview of projects and contributions"""
     student_id = session['user_id']
     student = Person.query.get(student_id)
+    
+    # Handle POST request for apply-by-domain
+    if request.method == 'POST':
+        selected_domains = request.form.getlist('domains')
+        if not selected_domains:
+            # Redirect back with error, but for now just continue to GET
+            pass
+        else:
+            # Get projects in selected domains that student hasn't applied to
+            projects = ResearchProject.query.filter(
+                ResearchProject.is_approved == True,
+                ResearchProject.project_status == 'Ongoing',
+                ResearchProject.domain.in_(selected_domains)
+            ).all()
+            
+            # Filter out projects where student is already a member or has pending application
+            available_projects = []
+            for project in projects:
+                # Check if already a member
+                is_member = ProjectPerson.query.filter_by(
+                    project_id=project.project_id,
+                    person_id=student_id
+                ).first()
+                
+                # Check if has pending application
+                has_application = ProjectApplication.query.filter_by(
+                    project_id=project.project_id,
+                    student_id=student_id,
+                    status='Pending'
+                ).first()
+                
+                if not is_member and not has_application and project.can_accept_students():
+                    available_projects.append(project)
+            
+            # Get faculty info
+            project_faculty = {}
+            for project in available_projects:
+                faculty = Person.query.get(project.faculty_id)
+                project_faculty[project.project_id] = faculty
+            
+            # Get domains for the form
+            domains = db.session.query(
+                ResearchProject.domain.distinct()
+            ).filter(
+                ResearchProject.domain != None,
+                ResearchProject.is_approved == True,
+                ResearchProject.project_status == 'Ongoing'
+            ).all()
+            
+            domain_list = [d[0] for d in domains if d[0]]
+            
+            return render_template('student/apply_by_domain_results.html',
+                                 projects=available_projects,
+                                 project_faculty=project_faculty,
+                                 selected_domains=selected_domains,
+                                 domains=domain_list)
     
     # Get joined projects (only from approved projects)
     joined_projects = db.session.query(
@@ -57,12 +113,24 @@ def dashboard():
         IPR.grant_status == 'Granted'  # Show only granted
     ).all()
     
+    # Get unique domains from approved projects
+    domains = db.session.query(
+        ResearchProject.domain.distinct()
+    ).filter(
+        ResearchProject.domain != None,
+        ResearchProject.is_approved == True,
+        ResearchProject.project_status == 'Ongoing'
+    ).all()
+    
+    domain_list = [d[0] for d in domains if d[0]]
+    
     return render_template('student/dashboard.html',
                          student=student,
                          joined_projects=joined_projects,
                          pending_applications=pending_applications,
                          publications=publications,
-                         iprs=iprs)
+                         iprs=iprs,
+                         domains=domain_list)
 
 
 # ==================== UPDATE PROFILE ====================

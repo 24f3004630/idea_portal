@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, session, jsonify
 from sqlalchemy.orm import aliased
-from database.db import db
-from database.models import (
+from backend.database.db import db
+from backend.database.models import (
     Person, ResearchProject, ProjectPerson, Publication, IPR, Startup, 
     Competition, ProjectCompetition, Funder, ProjectFunding, PublicationAuthor, Author,
     StudentCompetition

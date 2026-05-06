@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from database.models import Person, ResearchProject, Publication, IPR, Startup, ProjectPerson, Competition, ProjectCompetition
-from database.db import db
+from backend.database.models import Person, ResearchProject, Publication, IPR, Startup, ProjectPerson, Competition, ProjectCompetition
+from backend.database.db import db
 from auth.decorators import login_required, role_required
 from sqlalchemy import func
 from datetime import datetime

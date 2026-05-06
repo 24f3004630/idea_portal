@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import session, redirect, render_template, abort
-from database.models import Person, ResearchProject, ProjectApplication
+from backend.database.models import Person, ResearchProject, ProjectApplication
 
 
 def login_required(f):

@@ -67,7 +67,7 @@ def _render(template_name: str, **kwargs) -> str:
              bind=True, max_retries=3, default_retry_delay=60)
 def send_faculty_registration_pending(self, faculty_id: int):
     """Notify admin that a new faculty has registered and awaits approval."""
-    from database.models import Person
+    from backend.database.models import Person
     try:
         faculty = Person.query.get(faculty_id)
         if not faculty:
@@ -102,7 +102,7 @@ def send_faculty_registration_pending(self, faculty_id: int):
              bind=True, max_retries=3, default_retry_delay=60)
 def send_faculty_approved_email(self, faculty_id: int):
     """Notify approved faculty that their account is now active."""
-    from database.models import Person
+    from backend.database.models import Person
     try:
         faculty = Person.query.get(faculty_id)
         if not faculty:

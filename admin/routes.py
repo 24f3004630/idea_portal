@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, jsonify
-from database.models import Person, ResearchProject, Publication, IPR, Startup, ProjectPerson
-from database.db import db
+from backend.database.models import Person, ResearchProject, Publication, IPR, Startup, ProjectPerson
+from backend.database.db import db
 from auth.decorators import login_required, role_required
 from sqlalchemy import func
 
@@ -252,7 +252,7 @@ def projects_by_status(status):
 @role_required('Admin')
 def project_lifecycle(project_id):
     """View full project lifecycle: Project → Publication → IPR → Startup"""
-    from database.models import Startup
+    from backend.database.models import Startup
     
     project = ResearchProject.query.get(project_id)
     

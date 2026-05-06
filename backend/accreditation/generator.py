@@ -3,11 +3,11 @@ Accreditation Report Generator
 Generates comprehensive accreditation reports from research data
 """
 from datetime import datetime, timedelta
-from database.models import (
+from backend.database.models import (
     ResearchProject, Publication, IPR, Startup, Person, 
     ProjectPerson, ProjectApplication
 )
-from database.db import db
+from backend.database.db import db
 from sqlalchemy import func, extract
 import json
 

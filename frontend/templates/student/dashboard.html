@@ -3,96 +3,179 @@
 {% block content %}
 <h2 class="mb-4">Student Dashboard</h2>
 
-<!-- Quick Stats -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary stat-card">
-            <div class="card-body">
-                <h5 class="card-title">Projects Joined</h5>
-                <p class="card-text fs-5">{{ projects|length }}</p>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+            <i class="fas fa-home"></i> Overview
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="apply-domain-tab" data-bs-toggle="tab" data-bs-target="#apply-domain" type="button" role="tab">
+            <i class="fas fa-bullseye"></i> Apply by Domain
+        </button>
+    </li>
+</ul>
 
-<!-- Apply by Domain Section -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card bg-gradient-primary text-white">
-            <div class="card-body text-center">
-                <h4 class="card-title mb-3">
-                    <i class="fas fa-bullseye"></i> Find Projects by Your Interests
-                </h4>
-                <p class="card-text mb-4">
-                    Select domains that match your skills and interests, then apply to relevant projects with just one click!
-                </p>
-                <a href="/student/apply-by-domain" class="btn btn-light btn-lg">
-                    <i class="fas fa-search-plus"></i> Apply by Domain
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Analytics Charts Section -->
-<div class="row mt-4 mb-4">
-    <h3 class="mb-4">My Progress & Contributions</h3>
-    
-    <!-- Projects by Status -->
-    <div class="col-lg-6 mb-4">
-        <div class="card p-4 shadow">
-            <h5 class="card-title">Projects by Status</h5>
-            <div class="chart-container">
-                <canvas id="projectChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Contributions Overview -->
-    <div class="col-lg-6 mb-4">
-        <div class="card p-4 shadow">
-            <h5 class="card-title">Research Contributions</h5>
-            <div class="chart-container">
-                <canvas id="contributionChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Skills Match -->
-    <div class="col-lg-12 mb-4">
-        <div class="card p-4 shadow">
-            <h5 class="card-title">Skills Match with Project Requirements</h5>
-            <div class="chart-container">
-                <canvas id="skillsChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Projects List -->
-<div class="row mt-5">
-    <div class="col-md-12">
-        <h4 class="mb-3">Your Active Projects</h4>
-        <p class="text-muted">Projects you are enrolled in:</p>
-
-        {% if projects %}
-        <div class="list-group">
-            {% for project in projects %}
-            <a href="/student/projects" class="list-group-item list-group-item-action">
-                <div class="d-flex justify-content-between">
-                    <h5 class="mb-1">{{ project.project_title }}</h5>
-                    <span class="badge bg-secondary">{{ project.project_status }}</span>
+<!-- Tab Content -->
+<div class="tab-content">
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-white bg-primary stat-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Projects Joined</h5>
+                        <p class="card-text fs-5">{{ projects|length }}</p>
+                    </div>
                 </div>
-                <p class="mb-1">{{ project.domain }} | {{ project.department or 'N/A' }}</p>
-            </a>
-            {% endfor %}
+            </div>
         </div>
-        {% else %}
-        <p class="text-muted">You are not yet part of any approved project.</p>
-        {% endif %}
 
-        <a href="/student/projects" class="btn btn-primary mt-4">View all my projects</a>
-        <a href="/student/competitions" class="btn btn-info mt-4"><i class="fas fa-trophy"></i> My Competitions</a>
+        <!-- Analytics Charts Section -->
+        <div class="row mt-4 mb-4">
+            <h3 class="mb-4">My Progress & Contributions</h3>
+            
+            <!-- Projects by Status -->
+            <div class="col-lg-6 mb-4">
+                <div class="card p-4 shadow">
+                    <h5 class="card-title">Projects by Status</h5>
+                    <div class="chart-container">
+                        <canvas id="projectChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contributions Overview -->
+            <div class="col-lg-6 mb-4">
+                <div class="card p-4 shadow">
+                    <h5 class="card-title">Research Contributions</h5>
+                    <div class="chart-container">
+                        <canvas id="contributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Match -->
+            <div class="col-lg-12 mb-4">
+                <div class="card p-4 shadow">
+                    <h5 class="card-title">Skills Match with Project Requirements</h5>
+                    <div class="chart-container">
+                        <canvas id="skillsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects List -->
+        <div class="row mt-5">
+            <div class="col-md-12">
+                <h4 class="mb-3">Your Active Projects</h4>
+                <p class="text-muted">Projects you are enrolled in:</p>
+
+                {% if projects %}
+                <div class="list-group">
+                    {% for project in projects %}
+                    <a href="/student/projects" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between">
+                            <h5 class="mb-1">{{ project.project_title }}</h5>
+                            <span class="badge bg-secondary">{{ project.project_status }}</span>
+                        </div>
+                        <p class="mb-1">{{ project.domain }} | {{ project.department or 'N/A' }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">You are not yet part of any approved project.</p>
+                {% endif %}
+
+                <a href="/student/projects" class="btn btn-primary mt-4">View all my projects</a>
+                <a href="/student/competitions" class="btn btn-info mt-4"><i class="fas fa-trophy"></i> My Competitions</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apply by Domain Tab -->
+    <div class="tab-pane fade" id="apply-domain" role="tabpanel">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h3>Apply by Domain</h3>
+                <p class="text-muted">Select domains you're interested in and apply to relevant projects</p>
+                <hr>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <form method="POST" action="/student/apply-by-domain">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Select Your Interested Domains</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">Choose one or more domains that match your skills and interests:</p>
+                            
+                            <div class="row">
+                                {% for domain in domains %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               value="{{ domain }}" id="domain_{{ loop.index }}" name="domains">
+                                        <label class="form-check-label" for="domain_{{ loop.index }}">
+                                            {{ domain }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="fas fa-search"></i> Find Projects & Apply
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">How It Works</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="mb-0">
+                            <li class="mb-2">Select domains you're interested in</li>
+                            <li class="mb-2">View available projects in those domains</li>
+                            <li class="mb-2">Quick apply to multiple projects at once</li>
+                            <li>Track your applications in one place</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Benefits</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="mb-0">
+                            <li class="mb-1">Find projects matching your interests</li>
+                            <li class="mb-1">Apply with pre-filled information</li>
+                            <li class="mb-1">Save time with quick applications</li>
+                            <li>Increase your chances of getting accepted</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <a href="/student/projects" class="btn btn-outline-primary ms-2">Browse All Projects</a>
+            </div>
+        </div>
     </div>
 </div>
 
